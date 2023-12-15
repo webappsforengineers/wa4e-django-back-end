@@ -6,6 +6,7 @@ class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     country = models.CharField(max_length=255)
+    work_type = models.CharField(max_length=255)
     organisation = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
 
