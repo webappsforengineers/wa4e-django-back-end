@@ -1,5 +1,8 @@
 import scipy.io
+import tensorflow as tf
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # Load data from .mat data file
 mat = scipy.io.loadmat('StiffnessNNAppData.mat')
@@ -44,7 +47,7 @@ def preprocess_data(properties, curves):
         filtered_count += curves[j][0][k][0].shape[0]
         loaded_count += curves[j][0][k][0].shape[0]
     
-    for i in range(len(processed_data)):
+    for i in range(len(processed_data['input'])):
         processed_data['input'][i][0] = np.append(processed_data['input'][i][0], processed_data['input'][i][1])
         
     processed_data['input'] = processed_data['input'][:,0]
@@ -53,10 +56,111 @@ def preprocess_data(properties, curves):
 
 processed_data = preprocess_data(properties, curves)
 
-print(list(processed_data.keys()))
 
-np.info(processed_data['input'])
-np.info(processed_data['output'])
 
-print(processed_data['input'][0])
+inputs_array = pd.DataFrame(processed_data['input'])
+inputs_array.columns = ['column_of_arrays']
+# print(inputs)
 
+# Function to expand arrays into multiple columns
+def expand_array(row):
+    return pd.Series(row['column_of_arrays']) 
+
+inputs_df = inputs_array.apply(expand_array, axis=1)
+
+# print(inputs_df)
+# print(inputs_df.columns)
+# print(inputs_df.loc[0:5,0:8])
+
+# Concatenate the expanded columns with the original DataFrame
+# result = pd.concat([inputs, expanded_df], axis=1)
+# result = result.drop('Column_of_Arrays', axis=1)
+
+
+# np.info(processed_data['output'])
+
+# print(processed_data['input'][0])
+# print(processed_data['input'][1])
+# print(processed_data['input'][2])
+# print(processed_data['input'][3])
+# print(processed_data['input'][4])
+# print(processed_data['input'][2860])
+
+
+# Define properties and propSelect
+propSelect = [0, 1, 2, 3, 4, 5, 6, 7]  # Python indices start from 0
+properties = np.array([0.1, 1.019, 1, 0.76, 0.6923, 0.99, 1.2, 161.1])
+layers = [12]
+
+# Get inputs from processed data
+inputs = inputs_df.loc[:, np.append(propSelect, 8)].T
+print(inputs)
+
+# Get outputs from processed data
+targets = processed_data['output'].T
+
+# Construct a neural network model
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(units=layers[0], activation='tanh', input_shape=(len(propSelect) + 1,)),
+    tf.keras.layers.Dense(units=1)  # Output layer
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
+
+# # Set up Division of Data for Training, Validation, Testing
+train_ratio = 0.7
+val_ratio = 0.15
+test_ratio = 0.15
+
+num_samples = inputs.shape[1]
+num_train = int(train_ratio * num_samples)
+# print(num_train)
+# print(inputs.loc[:,0:num_train])
+num_val = int(val_ratio * num_samples)
+
+
+x_train, y_train = inputs.iloc[:,0:num_train], targets[:,0:num_train]
+# print(type(x_train))
+# print(x_train.shape)
+# print(type(y_train))
+# print(y_train.shape)
+# print(x_train)
+# print(y_train)
+x_val, y_val = inputs.iloc[:, num_train:num_train + num_val], targets[:, num_train:num_train + num_val]
+# print(x_val.shape)
+# print(y_val.shape)
+# print(x_val)
+# print(y_val)
+x_test, y_test = inputs.iloc[:, num_train + num_val:], targets[:, num_train + num_val:]
+# print(x_test.shape)
+# print(y_test.shape)
+# print(x_test)
+# print(y_test)
+
+# # Train the model
+# history = model.fit(x_train, y_train, epochs=100, batch_size=32, validation_data=(x_val, y_val), verbose=0)
+
+# # Test the model
+# outputs = model.predict(inputs)
+# performance = model.evaluate(inputs, targets, verbose=0)
+
+# # Plot regression
+# plt.figure()
+# plt.plot(targets, outputs, 'o')
+# plt.xlabel('True values')
+# plt.ylabel('Predicted values')
+# plt.title('Regression plot')
+# plt.show()
+
+# # Calculate GGo for different strain values
+# strain = np.logspace(-4, 1, 200)
+# GGo = []
+
+# for s in strain:
+#     inputs_prop = np.append(properties[propSelect], s).reshape(1, -1)
+#     GGo.append(model.predict(inputs_prop)[0][0])
+
+# # Create a table (pandas DataFrame) with strain and GGo values
+# data = {'Strain': strain, 'GGo': GGo}
+# b = pd.DataFrame(data)
