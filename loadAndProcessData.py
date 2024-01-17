@@ -3,6 +3,8 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from keras import layers, models, optimizers, regularizers
+
 
 # Load data from .mat data file
 mat = scipy.io.loadmat('StiffnessNNAppData.mat')
@@ -70,7 +72,7 @@ inputs_df = inputs_array.apply(expand_array, axis=1)
 # print(inputs_df.shape)
 # print(inputs_df.head())
 # Define properties and propSelect
-propSelect = [0, 1, 2, 3, 4, 5, 6, 7]  # Python indices start from 0
+propSelect = [0, 1, 2, 3, 4, 5, 6, 7]  
 properties = np.array([0.1, 1.019, 1, 0.76, 0.6923, 0.99, 1.2, 161.1])
 layers = [12]
 
@@ -80,25 +82,28 @@ selected_inputs = inputs_df[np.append(propSelect, 8)]
 
 inputs = selected_inputs.to_numpy()
 print(inputs.shape)
+print(inputs)
 
 # # Get outputs from processed data
 targets = processed_data['output']
-# print(targets.shape)
+print(targets.shape)
+print(targets)
 
 
 # # Construct a neural network model
 model = tf.keras.Sequential([
     tf.keras.layers.Dense(units=12, activation='tanh', input_shape=(len(propSelect) + 1,)),
-    tf.keras.layers.Dense(units=1)  # Output layer
+    # tf.keras.layers.Dropout(0.25), # Adjust dropout rate as needed
+    tf.keras.layers.Dense(units=1, activation='linear')  # Output layer
 ])
 
 # print(model.layers)
 # print(model.summary())
 
-# # Compile the model
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
+# # # Compile the model
+model.compile(optimizer='adam', loss='mse')
 
-# # Set up Division of Data for Training, Validation, Testing
+# # # Set up Division of Data for Training, Validation, Testing
 train_ratio = 0.7
 val_ratio = 0.15
 test_ratio = 0.15
@@ -108,18 +113,18 @@ num_train = int(train_ratio * num_samples)
 num_val = int(val_ratio * num_samples)
 
 
-x_train, y_train = inputs[0:num_train,:], targets[0:num_train,:]
-print(type(x_train))
-print(x_train.shape)
-print(type(y_train))
-print(y_train.shape)
-# print(x_train)
-# print(y_train)
-x_val, y_val = inputs[num_train:num_train + num_val, :], targets[num_train:num_train + num_val,:]
-print(x_val.shape)
-print(type(x_val))
-print(y_val.shape)
-print(type(y_val))
+x_train, y_train = inputs[0:num_train,:], targets[0:num_train, :]
+# print(type(x_train))
+# print(x_train.shape)
+# print(type(y_train))
+# print(y_train.shape)
+# # print(x_train)
+# # print(y_train)
+x_val, y_val = inputs[num_train:num_train + num_val, :], targets[num_train:num_train + num_val, :]
+# print(x_val.shape)
+# print(type(x_val))
+# print(y_val.shape)
+# print(type(y_val))
 
 x_test, y_test = inputs[num_train + num_val:, :], targets[num_train + num_val:, :]
 # print(x_test.shape)
@@ -128,7 +133,8 @@ x_test, y_test = inputs[num_train + num_val:, :], targets[num_train + num_val:, 
 def plot_loss(history, fig_name):
     plt.figure()
     plt.plot(history.history['loss'], label='loss')
-    plt.plot(history.history['val_mae'], label='val_mae')
+    plt.plot(history.history['mae'], label='mae')
+    plt.plot(history.history['val_loss'], label='val_loss')
     plt.xlabel('Epoch')
     plt.ylabel('Error')
     plt.legend()
@@ -136,36 +142,78 @@ def plot_loss(history, fig_name):
     plt.savefig(fig_name)
     plt.clf()
 
-# print(x_train.shape)
-# print(x_train[0:5])
-# print(y_train.shape)
-# print(y_train[0:5])
+# # print(x_train.shape)
+# # print(x_train[0:5])
+# # print(y_train.shape)
+# # print(y_train[0:5])
 
-# Train the model
-history = model.fit(x_train, y_train, epochs=100, batch_size=32, validation_data=(x_val, y_val))
-# validation_data=(x_val, y_val)
-# print(history.history)
+# # Train the model
+history = model.fit(x_train, y_train, epochs=100, batch_size=32,validation_data=(x_val, y_val), verbose=0)
+print(history.history)
+# # validation_data=(x_val, y_val)
+# # print(history.history)
 
-plot_loss(history, 'history.png')
+plot_loss(history, 'plot_loss.png')
+
+# loss, mse = model.evaluate(x_test, y_test)
+# print(f'loss{loss}')
+# print(f'mse{mse}')
+
+outputs = model.predict(inputs)
+
+print(pd.DataFrame(outputs).describe())
+print(pd.DataFrame(targets).describe())
+
+plt.figure()
+plt.scatter(targets, outputs)
+plt.xlabel('True Values')
+plt.ylabel('Predictions')
+plt.savefig('targets_vs_outputs.png')
+plt.clf()
+
+# plot_loss(history, 'history.png')
 # # Test the model
-# outputs = model.predict(inputs)
-# performance = model.evaluate(inputs, targets, verbose=0)
+# print("Evaluate on test data")
+# results = model.evaluate(x_test, y_test, batch_size=128)
+# print("test loss, test acc:", results)
 
-# # Plot regression
+
+
+# outputs = model.predict(inputs)
+# performance = model.evaluate(x_test, y_test)
+
+
+# Plot regression
 # plt.figure()
 # plt.plot(targets, outputs, 'o')
 # plt.xlabel('True values')
 # plt.ylabel('Predicted values')
 # plt.title('Regression plot')
-# plt.show()
+# plt.savefig('regression_plot.png')
+# plt.clf()
 
-# # Calculate GGo for different strain values
-# strain = np.logspace(-4, 1, 200)
-# GGo = []
+# Calculate GGo for different strain values
+strain = np.logspace(-4, 1, 200)
+GGo = []
 
-# for s in strain:
-#     inputs_prop = np.append(properties[propSelect], s).reshape(1, -1)
-#     GGo.append(model.predict(inputs_prop)[0][0])
+for s in strain:
+    inputs_prop = np.append(properties[propSelect], s).reshape(1, -1)
+    GGo.append(model.predict(inputs_prop)[0][0])
+
+print(inputs_prop)
+print(inputs_prop)
+print(GGo)
+print(len(strain))
+print(len(GGo))
+
+plt.figure()
+plt.scatter(strain, GGo)
+plt.xscale('log')
+plt.xlabel('Strain')
+plt.ylabel('G/G0')
+plt.title('Output Curve')
+plt.savefig('output_curve.png')
+plt.clf()
 
 # # Create a table (pandas DataFrame) with strain and GGo values
 # data = {'Strain': strain, 'GGo': GGo}
