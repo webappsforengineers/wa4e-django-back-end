@@ -50,8 +50,48 @@ def preprocess_data(properties, curves):
     processed_data['input'] = processed_data['input'][:,0]
     
     shuffled_data = unison_shuffled_copies(processed_data['input'], processed_data['output'])
+    
+    # reshape input data
+    inputs_array = pd.DataFrame(shuffled_data[0])
+    inputs_array.columns = ['column_of_arrays']
+    inputs = inputs_array.apply(expand_array, axis=1)
+    targets = shuffled_data[1]
 
-    return shuffled_data
+    return shuffled_data, inputs, targets
+
+def validate_data():
+    print('validate_data')
+
+def filter_data(shuffled_data,
+                p_min, p_max, 
+                ppa_min, ppa_max, 
+                ocr_min, ocr_max, 
+                e_min, e_max,
+                dr_min, dr_max,
+                d50_min, d50_max,
+                cu_min, cu_max,
+                g0_min, g0_max):
+
+    
+    filtered_inputs = []
+    filtered_outputs = []
+
+    for i in range(len(shuffled_data[0])):
+        if shuffled_data[0][i][0] >= p_min and shuffled_data[0][i][0] <= p_max and \
+        shuffled_data[0][i][1] >= ppa_min and shuffled_data[0][i][1] <= ppa_max and \
+        shuffled_data[0][i][2] >= ocr_min and shuffled_data[0][i][2] <= ocr_max and \
+        shuffled_data[0][i][3] >= e_min and shuffled_data[0][i][3] <= e_max and \
+        shuffled_data[0][i][4] >= dr_min and shuffled_data[0][i][4] <= dr_max and \
+        shuffled_data[0][i][5] >= d50_min and shuffled_data[0][i][5] <= d50_max and \
+        shuffled_data[0][i][6] >= cu_min and shuffled_data[0][i][6] <= cu_max and \
+        shuffled_data[0][i][7] >= g0_min and shuffled_data[0][i][7] <= g0_max:
+            filtered_inputs.append(shuffled_data[0][i])
+            filtered_outputs.append(shuffled_data[1][i])    
+
+    inputs = np.asarray(filtered_inputs)
+    targets = np.asarray(filtered_outputs)
+    
+    return inputs, targets
 
 
 def plot_loss(history, fig_name):
@@ -90,18 +130,15 @@ def plot_strain_v_GGo(strain, GGo, fig_name):
     plt.savefig(fig_name)
     plt.clf()
 
-def train_model(shuffled_data, propSelect, properties):
-    inputs_array = pd.DataFrame(shuffled_data[0])
-    inputs_array.columns = ['column_of_arrays']
-    inputs_df = inputs_array.apply(expand_array, axis=1)
+def train_model(inputs, outputs, propSelect, properties):
     
-
-    # Get inputs from processed data
+    inputs_df = pd.DataFrame(inputs)
+    
     selected_inputs = inputs_df[np.append(propSelect, 8)]
     inputs = selected_inputs.to_numpy()
 
     # Get outputs from processed data
-    targets = shuffled_data[1]
+    targets = outputs
 
     # Construct a neural network model
     model = tf.keras.Sequential([
@@ -132,7 +169,7 @@ def train_model(shuffled_data, propSelect, properties):
     x_test, y_test = inputs[num_train + num_val:, :], targets[num_train + num_val:, :]
 
     # Train the model
-    history = model.fit(x_train, y_train, epochs=300, validation_data=(x_val, y_val), verbose=0)
+    history = model.fit(x_train, y_train, epochs=100, validation_data=(x_val, y_val), verbose=0)
 
     # Plot how the loss (MSE) changed throughout the epochs
     plot_loss(history, 'plot_loss.png')
@@ -160,12 +197,28 @@ def train_model(shuffled_data, propSelect, properties):
     return performance, output_data
 
 properties, curves = load_data('StiffnessNNAppData.mat')
-shuffled_data = preprocess_data(properties, curves)
+shuffled_data, inputs, targets = preprocess_data(properties, curves)
+
+# filtered_inputs = []
+# filtered_outputs = []
+
+# for i in range(len(shuffled_data[0])):
+#     if shuffled_data[0][i][0] >= 0.2 and shuffled_data[0][i][0] <= 0.9 and \
+#     shuffled_data[0][i][1] >= 0 and shuffled_data[0][i][1] <= 2:
+#         filtered_inputs.append(shuffled_data[0][i])
+#         filtered_outputs.append(shuffled_data[1][i])    
+
+# inputs = np.asarray(filtered_inputs)
+# print(inputs.shape)
+# targets = np.asarray(filtered_outputs)
+# print(targets.shape)
 
 # Define properties and propSelect
 propSelect = [0, 1, 2, 3, 4, 5, 6, 7]  
 properties = np.array([0.1, 1.019, 1, 0.76, 0.6923, 0.99, 1.2, 161.1])
-performance, output_data = train_model(shuffled_data, propSelect, properties)
+
+    
+performance, output_data = train_model(inputs, targets, propSelect, properties)
 
 print(f'performance: {performance}')
 print(output_data)
