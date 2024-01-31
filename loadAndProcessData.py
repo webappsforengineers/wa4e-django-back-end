@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from keras import layers, models, optimizers, regularizers
+import datetime
 
 
 # Load data from .mat data file
@@ -17,7 +18,7 @@ def load_data(filename):
 # shuffle inputs and outputs in unison
 def unison_shuffled_copies(a, b):
     assert len(a) == len(b)
-    p = np.random.permutation(len(a))
+    p = np.random.default_rng(seed=43).permutation(len(a))
     return a[p], b[p]
 
 # Function to expand arrays into multiple columns
@@ -26,23 +27,12 @@ def expand_array(row):
 
 def preprocess_data(properties, curves):
     processed_data = {'input': np.empty((0, 2)), 'output': np.empty((0, 1))}
-    loaded_count = 0
-    filtered_count = 0
-    final_count = 0
     
     for j in range(len(properties)):
         for k in range(len(properties[j][0])):
             for l in range(curves[j][0][k][0].shape[0]):
                 processed_data['input'] = np.vstack((processed_data['input'], np.hstack((properties[j][0][k].T, curves[j][0][k][0][l, 0]))))
                 processed_data['output'] = np.vstack((processed_data['output'], curves[j][0][k][0][l, 1]))
-                loaded_count += 1
-                final_count += 1
-            
-            filtered_count += curves[j][0][k][0].shape[0]
-            loaded_count += curves[j][0][k][0].shape[0]
-        
-        filtered_count += curves[j][0][k][0].shape[0]
-        loaded_count += curves[j][0][k][0].shape[0]
     
     for i in range(len(processed_data['input'])):
         processed_data['input'][i][0] = np.append(processed_data['input'][i][0], processed_data['input'][i][1])
@@ -97,6 +87,7 @@ def filter_data(shuffled_data,
 def plot_loss(history, fig_name):
     plt.figure()
     plt.plot(history.history['loss'], label='loss')
+    plt.plot(history.history['val_loss'], label='val_loss')
     plt.xlabel('Epoch')
     plt.ylabel('Error')
     plt.legend()
@@ -107,16 +98,18 @@ def plot_loss(history, fig_name):
 def plot_output_v_target(targets, outputs, fig_name):
     print(targets.shape)
     print(outputs.shape)
-    p = np.polyfit(targets[0], outputs[0], 1)
-    print(f'Fit: y = {str(round(p[0],5))} x + {str(round(p[1], 5))}')
-    fit_equation = f'Fit: y = {str(round(p[0],5))} x + {str(round(p[1], 5))}'
+    # p = np.polyfit(targets[0], outputs[0], 1)
+    # print(f'Fit: y = {str(round(p[0],5))} x + {str(round(p[1], 5))}')
+    # fit_equation = f'Fit: y = {str(round(p[0],5))} x + {str(round(p[1], 5))}'
     plt.figure()
     plt.scatter(targets, outputs)
-    plt.plot(targets, p[0]*targets+p[1], color='black', linewidth=2)
+    # plt.plot(targets, p[0]*targets+p[1], color='black', linewidth=2)
+    # plt.xlim([0,1])
+    # plt.ylim([0,1])
     plt.xlabel('True Values')
     plt.ylabel('Predictions')
     # plt.text(2, 0.65, str(p))
-    plt.title(fit_equation)
+    # plt.title(fit_equation)
     plt.savefig(fig_name)
     plt.clf()
     
@@ -129,36 +122,9 @@ def plot_strain_v_GGo(strain, GGo, fig_name):
     plt.title('Output Curve')
     plt.savefig(fig_name)
     plt.clf()
-
-def train_model(inputs, outputs, propSelect, properties):
     
-    inputs_df = pd.DataFrame(inputs)
-    
-    selected_inputs = inputs_df[np.append(propSelect, 8)]
-    inputs = selected_inputs.to_numpy()
-
-    # Get outputs from processed data
-    targets = outputs
-
-    # Construct a neural network model
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(units=12, activation='tanh', input_shape=(len(propSelect) + 1,)),
-        # tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(propSelect) + 1,)),
-        # tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(propSelect) + 1,)),
-        # tf.keras.layers.Dropout(0.6), # Adjust dropout rate as needed
-        tf.keras.layers.Dense(units=1, activation='linear')  # Output layer
-    ])
-
-    # print(model.layers)
-    # print(model.summary())
-
-    # Compile the model
-    model.compile(optimizer='adam', loss='mse')
-
+def divide_dataset(train_ratio, val_ratio, inputs, targets):
     # Set up Division of Data for Training, Validation, Testing
-    train_ratio = 0.7
-    val_ratio = 0.15
-    # test_ratio = 0.15
 
     num_samples = inputs.shape[0]
     num_train = int(train_ratio * num_samples)
@@ -167,9 +133,43 @@ def train_model(inputs, outputs, propSelect, properties):
     x_train, y_train = inputs[0:num_train,:], targets[0:num_train, :]
     x_val, y_val = inputs[num_train:num_train + num_val, :], targets[num_train:num_train + num_val, :]
     x_test, y_test = inputs[num_train + num_val:, :], targets[num_train + num_val:, :]
+    
+    return x_train, y_train, x_val, y_val, x_test, y_test
+
+def train_model(inputs, targets, propSelect):
+    
+    inputs_df = pd.DataFrame(inputs) 
+    selected_inputs = inputs_df[np.append(propSelect, 8)]
+    inputs = selected_inputs.to_numpy()
+
+    # Construct a neural network model
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(propSelect) + 1,)),
+        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(propSelect) + 1,)),
+        # tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(propSelect) + 1,)),
+        # tf.keras.layers.Dropout(0.05), # Adjust dropout rate as needed
+        tf.keras.layers.Dense(units=1, activation='linear')  # Output layer
+    ])
+
+    # print(model.layers)
+    # print(model.summary())
+
+    # Compile the model
+    model.compile(optimizer=tf.keras.optimizers.Nadam(), loss='mse')
+    
+    # log_dir = 'logs/fit/' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    
+    # learning rate scheduler
+    lr_callback = tf.keras.callbacks.ReduceLROnPlateau(factor=0.1, patience=10, min_delta=0.0001, min_lr=0.00001)
+    
+    x_train, y_train, x_val, y_val, x_test, y_test = divide_dataset(0.7, 0.15, inputs, targets)
 
     # Train the model
-    history = model.fit(x_train, y_train, epochs=100, validation_data=(x_val, y_val), verbose=0)
+    history = model.fit(x_train, y_train, epochs=150, validation_data=(x_val, y_val), verbose=0, batch_size=16, callbacks=[lr_callback])
+    
+    # # callbacks argument when using tensorboard
+    # callbacks=[tensorboard_callback, lr_callback]
 
     # Plot how the loss (MSE) changed throughout the epochs
     plot_loss(history, 'plot_loss.png')
@@ -178,7 +178,10 @@ def train_model(inputs, outputs, propSelect, properties):
 
     outputs = model.predict(inputs)
     plot_output_v_target(targets, outputs, 'regression_plot.png')
+    
+    return performance, model
 
+def predict_GGo(properties, propSelect, model):
     # Calculate GGo for different strain values
     strain = np.logspace(-4, 1, 200)
     GGo = []
@@ -186,39 +189,26 @@ def train_model(inputs, outputs, propSelect, properties):
     for s in strain:
         inputs_prop = np.append(properties[propSelect], s).reshape(1, -1)
         GGo.append(model.predict(inputs_prop)[0][0])
-        
-    plot_strain_v_GGo(strain, GGo, 'output_curve.png')
-
 
     # Create a table (pandas DataFrame) with strain and GGo values
     data = {'Strain': strain, 'GGo': GGo}
     output_data = pd.DataFrame(data)
     
-    return performance, output_data
+    return output_data, strain, GGo
+    
 
 properties, curves = load_data('StiffnessNNAppData.mat')
 shuffled_data, inputs, targets = preprocess_data(properties, curves)
-
-# filtered_inputs = []
-# filtered_outputs = []
-
-# for i in range(len(shuffled_data[0])):
-#     if shuffled_data[0][i][0] >= 0.2 and shuffled_data[0][i][0] <= 0.9 and \
-#     shuffled_data[0][i][1] >= 0 and shuffled_data[0][i][1] <= 2:
-#         filtered_inputs.append(shuffled_data[0][i])
-#         filtered_outputs.append(shuffled_data[1][i])    
-
-# inputs = np.asarray(filtered_inputs)
-# print(inputs.shape)
-# targets = np.asarray(filtered_outputs)
-# print(targets.shape)
 
 # Define properties and propSelect
 propSelect = [0, 1, 2, 3, 4, 5, 6, 7]  
 properties = np.array([0.1, 1.019, 1, 0.76, 0.6923, 0.99, 1.2, 161.1])
 
     
-performance, output_data = train_model(inputs, targets, propSelect, properties)
+performance, model = train_model(inputs, targets, propSelect)
+
+output_data, strain, GGo = predict_GGo(properties, propSelect, model)
+plot_strain_v_GGo(strain, GGo, 'output_curve.png')
 
 print(f'performance: {performance}')
-print(output_data)
+# print(output_data)
