@@ -64,7 +64,7 @@ def filter_data(shuffled_data,
 
     
     filtered_inputs = []
-    filtered_outputs = []
+    filtered_targets = []
 
     for i in range(len(shuffled_data[0])):
         if shuffled_data[0][i][0] >= p_min and shuffled_data[0][i][0] <= p_max and \
@@ -76,12 +76,12 @@ def filter_data(shuffled_data,
         shuffled_data[0][i][6] >= cu_min and shuffled_data[0][i][6] <= cu_max and \
         shuffled_data[0][i][7] >= g0_min and shuffled_data[0][i][7] <= g0_max:
             filtered_inputs.append(shuffled_data[0][i])
-            filtered_outputs.append(shuffled_data[1][i])    
+            filtered_targets.append(shuffled_data[1][i])    
 
-    inputs = np.asarray(filtered_inputs)
-    targets = np.asarray(filtered_outputs)
+    filtered_inputs = np.asarray(filtered_inputs)
+    filtered_targets = np.asarray(filtered_targets)
     
-    return inputs, targets
+    return filtered_inputs, targets
 
 
 def plot_loss(history, fig_name):

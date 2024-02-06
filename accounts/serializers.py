@@ -20,3 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+    
+# class FileUploadSerializer(serializers.Serializer):
+#     file=serializers.FileField()
