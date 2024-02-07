@@ -21,5 +21,5 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
     
-# class FileUploadSerializer(serializers.Serializer):
-#     file=serializers.FileField()
+class FileUploadSerializer(serializers.Serializer):
+    file=serializers.FileField()

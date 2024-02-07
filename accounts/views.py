@@ -12,6 +12,7 @@ from .models import CustomUser
 import scipy.io
 import pandas as pd
 import numpy as np
+import json
 
 # User accounts
 
@@ -157,10 +158,31 @@ def preprocess_data(request):
     shuffled_data = unison_shuffled_copies(processed_data['input'], processed_data['output'])
     
     # reshape input data
-    inputs_array = pd.DataFrame(shuffled_data[0])
-    inputs_array.columns = ['column_of_arrays']
-    inputs = inputs_array.apply(expand_array, axis=1)
+    inputs = shuffled_data[0]
+    # inputs_array = pd.DataFrame(shuffled_data[0])
+    # inputs_array.columns = ['column_of_arrays']
+    # inputs = inputs_array.apply(expand_array, axis=1)
     targets = shuffled_data[1]
-    data_length = len(inputs)
     
-    return Response({'dataset_length': data_length})
+    return Response({'dataset_length': len(inputs), 'inputs': inputs, 'targets': targets})
+# , 'targets': str(targets.shape)
+
+@api_view(['POST'])
+def test_post(request):
+    inputs = request.data.get('inputs')
+    targets = request.data.get('targets')
+    
+    inputs_json = json.loads(inputs)
+    inputs_arr = np.array(inputs_json)
+    
+    targets_json = json.loads(targets)
+    targets_arr = np.array(targets_json)
+    # inputs_1 = inputs[0]
+    # targets_1 = targets[0]
+    
+    return Response({ 'inputs_type_arr': str(type(inputs_arr)), 'inputs_arr_1': inputs_arr[0],
+                     'targets_type_arr': str(type(targets_arr)), 'targets_arr_1': targets_arr[0]})
+
+# 'inputs_type': str(type(inputs_json)), 'inputs_1': inputs_json[0],
+    
+
