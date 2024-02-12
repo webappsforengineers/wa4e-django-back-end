@@ -13,6 +13,7 @@ import scipy.io
 import pandas as pd
 import numpy as np
 import json
+import tensorflow as tf
 
 # User accounts
 
@@ -135,9 +136,6 @@ def unison_shuffled_copies(a, b):
     p = np.random.default_rng(seed=43).permutation(len(a))
     return a[p], b[p]
 
-# Function to expand arrays into multiple columns
-def expand_array(row):
-    return pd.Series(row['column_of_arrays']) 
 
 @api_view(['GET'])
 def preprocess_data(request):
@@ -159,30 +157,63 @@ def preprocess_data(request):
     
     # reshape input data
     inputs = shuffled_data[0]
-    # inputs_array = pd.DataFrame(shuffled_data[0])
-    # inputs_array.columns = ['column_of_arrays']
-    # inputs = inputs_array.apply(expand_array, axis=1)
     targets = shuffled_data[1]
     
     return Response({'dataset_length': len(inputs), 'inputs': inputs, 'targets': targets})
-# , 'targets': str(targets.shape)
+
+
+
+def divide_dataset(train_ratio, val_ratio, inputs, targets):
+    # Set up Division of Data for Training, Validation, Testing
+
+    num_samples = inputs.shape[0]
+    num_train = int(train_ratio * num_samples)
+    num_val = int(val_ratio * num_samples)
+
+    x_train, y_train = inputs[0:num_train,:], targets[0:num_train, :]
+    x_val, y_val = inputs[num_train:num_train + num_val, :], targets[num_train:num_train + num_val, :]
+    x_test, y_test = inputs[num_train + num_val:, :], targets[num_train + num_val:, :]
+    
+    return x_train, y_train, x_val, y_val, x_test, y_test
 
 @api_view(['POST'])
-def test_post(request):
-    inputs = request.data.get('inputs')
-    targets = request.data.get('targets')
+def train_model(request):
+    raw_inputs = request.data.get('inputs')
+    raw_targets = request.data.get('targets')
     
-    inputs_json = json.loads(inputs)
+    inputs_json = json.loads(raw_inputs)
     inputs_arr = np.array(inputs_json)
     
-    targets_json = json.loads(targets)
+    targets_json = json.loads(raw_targets)
     targets_arr = np.array(targets_json)
-    # inputs_1 = inputs[0]
-    # targets_1 = targets[0]
     
-    return Response({ 'inputs_type_arr': str(type(inputs_arr)), 'inputs_arr_1': inputs_arr[0],
-                     'targets_type_arr': str(type(targets_arr)), 'targets_arr_1': targets_arr[0]})
+    inputs_df = pd.DataFrame(inputs_arr)
+    selected_inputs = inputs_df[[0,1,2,3,4,5,6,7,8]]
+    inputs = selected_inputs.to_numpy()
+    
+    targets = targets_arr
+    
+        # Construct a neural network model
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(9,)),
+        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(9,)),
+        tf.keras.layers.Dense(units=1, activation='linear')  # Output layer
+    ])
+    print(model.layers)
+    
+    # Compile the model
+    model.compile(optimizer=tf.keras.optimizers.Nadam(), loss='mse')
+    
+    # learning rate scheduler
+    lr_callback = tf.keras.callbacks.ReduceLROnPlateau(factor=0.1, patience=10, min_delta=0.0001, min_lr=0.00001)
+    
+    x_train, y_train, x_val, y_val, x_test, y_test = divide_dataset(0.7, 0.15, inputs, targets)
+    
+    history = model.fit(x_train, y_train, epochs=150, validation_data=(x_val, y_val), verbose=0, batch_size=16, callbacks=[lr_callback])
+    
+    performance = model.evaluate(x_test, y_test)
 
-# 'inputs_type': str(type(inputs_json)), 'inputs_1': inputs_json[0],
+    return Response({ 'performance_mse': str(performance)})
+
     
 

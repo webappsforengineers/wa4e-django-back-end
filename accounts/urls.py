@@ -1,5 +1,5 @@
 from django.urls import include, path, re_path
-from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, preprocess_data, test_post
+from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, preprocess_data, train_model
 
 
 
@@ -14,5 +14,5 @@ urlpatterns = [
     path('delete-user/<int:pk>/', DeleteUser.as_view(), name='delete-user'),
     path('file-upload/', FileUploadView.as_view(), name='file-upload'),
     path('preprocess-data/', preprocess_data, name='preprocess-data'),
-    path('test-post/', test_post, name='test-post'),
+    path('train-model/', train_model, name='train-model'),
 ]
