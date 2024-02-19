@@ -1,5 +1,5 @@
 from django.urls import include, path, re_path
-from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, preprocess_data, train_model
+from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, train_model
 
 
 
@@ -13,6 +13,6 @@ urlpatterns = [
     re_path('^select-user/(?P<email>.+)/$', SelectUser.as_view(), name='select-user'),
     path('delete-user/<int:pk>/', DeleteUser.as_view(), name='delete-user'),
     path('file-upload/', FileUploadView.as_view(), name='file-upload'),
-    path('preprocess-data/', preprocess_data, name='preprocess-data'),
+    # path('preprocess-data/', preprocess_data, name='preprocess-data'),
     path('train-model/', train_model, name='train-model'),
 ]
