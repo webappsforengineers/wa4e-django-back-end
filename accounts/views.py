@@ -154,7 +154,7 @@ def divide_dataset(train_ratio, val_ratio, inputs, targets):
     return x_train, y_train, x_val, y_val, x_test, y_test
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 def train_model(request):
     properties, curves = load_data('StiffnessNNAppData.mat')
     processed_data = {'input': np.empty((0, 2)), 'output': np.empty((0, 1))}
@@ -177,15 +177,16 @@ def train_model(request):
     inputs_array.columns = ['column_of_arrays']
     inputs_expanded = inputs_array.apply(expand_array, axis=1)
     
-    selected_inputs = inputs_expanded[[0,1,2,3,4,5,6,7,8]]
+    prop_select = request.data.get('prop_select')
+    selected_inputs = inputs_expanded[np.append(prop_select, 8)]
     inputs = selected_inputs.to_numpy()
     
     targets = shuffled_data[1]
     
     # Construct a neural network model
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(9,)),
-        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(9,)),
+        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(prop_select) + 1,)),
+        tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(len(prop_select) + 1,)),
         tf.keras.layers.Dense(units=1, activation='linear')  # Output layer
     ])
     print(model.layers)
@@ -205,10 +206,10 @@ def train_model(request):
     
     strain = np.logspace(-4, 1, 200)
     GGo = []
-    properties = np.array([0.1, 1.019, 1, 0.76, 0.6923, 0.99, 1.2, 161.1])
+    input_properties = np.array(request.data.get('input_properties'))
 
     for s in strain:
-        inputs_prop = np.append(properties, s).reshape(1, -1)
+        inputs_prop = np.append(input_properties[prop_select], s).reshape(1, -1)
         GGo.append(model.predict(inputs_prop)[0][0])
 
     # Create a table (pandas DataFrame) with strain and GGo values
