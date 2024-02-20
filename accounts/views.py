@@ -217,55 +217,5 @@ def train_model(request):
     output_data = pd.DataFrame(data)
     
     return Response({'dataset_length': len(inputs), 'performance_mse': str(performance), 'outputs': outputs, 'targets': targets, 'strain': strain, 'GGo': GGo, 'output_data': output_data})
-
-# 'dataset_length': len(inputs), 'performance_mse': str(performance), 'outputs': outputs, 'targets': targets
-
-
-
-
-
-
-
-
-# @api_view(['POST'])
-# def train_model(request):
-#     raw_inputs = request.data.get('inputs')
-#     raw_targets = request.data.get('targets')
-
-#     inputs_json = json.loads(raw_inputs)
-#     inputs_arr = np.array(inputs_json)
-    
-#     targets_json = json.loads(raw_targets)
-#     targets_arr = np.array(targets_json)
-    
-#     inputs_df = pd.DataFrame(inputs_arr)
-#     selected_inputs = inputs_df[[0,1,2,3,4,5,6,7,8]]
-#     inputs = selected_inputs.to_numpy()
-    
-#     targets = targets_arr
-    
-#     # Construct a neural network model
-#     model = tf.keras.Sequential([
-#         tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(9,)),
-#         tf.keras.layers.Dense(units=128, activation='tanh', input_shape=(9,)),
-#         tf.keras.layers.Dense(units=1, activation='linear')  # Output layer
-#     ])
-#     print(model.layers)
-    
-#     # Compile the model
-#     model.compile(optimizer=tf.keras.optimizers.Nadam(), loss='mse')
-    
-#     # learning rate scheduler
-#     lr_callback = tf.keras.callbacks.ReduceLROnPlateau(factor=0.1, patience=10, min_delta=0.0001, min_lr=0.00001)
-    
-#     x_train, y_train, x_val, y_val, x_test, y_test = divide_dataset(0.7, 0.15, inputs, targets)
-    
-#     history = model.fit(x_train, y_train, epochs=10, validation_data=(x_val, y_val), batch_size=16, callbacks=[lr_callback])
-    
-#     performance = model.evaluate(x_test, y_test)
-#     outputs = model.predict(inputs)
-
-#     return Response({ 'performance_mse': str(performance), 'outputs': outputs, 'targets': targets})
-
     
 
