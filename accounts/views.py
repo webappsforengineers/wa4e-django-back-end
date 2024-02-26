@@ -199,7 +199,7 @@ def train_model(request):
     
     x_train, y_train, x_val, y_val, x_test, y_test = divide_dataset(0.7, 0.15, inputs, targets)
     
-    history = model.fit(x_train, y_train, epochs=10, validation_data=(x_val, y_val), batch_size=16, callbacks=[lr_callback])
+    history = model.fit(x_train, y_train, epochs=150, validation_data=(x_val, y_val), batch_size=16, callbacks=[lr_callback])
     
     performance = model.evaluate(x_test, y_test)
     outputs = model.predict(inputs)
@@ -216,6 +216,6 @@ def train_model(request):
     data = {'Strain': strain, 'GGo': GGo}
     output_data = pd.DataFrame(data)
     
-    return Response({'dataset_length': len(inputs), 'performance_mse': str(performance), 'outputs': outputs, 'targets': targets, 'strain': strain, 'GGo': GGo, 'output_data': output_data})
+    return Response({'dataset_length': len(inputs), 'performance_mse': str(round(performance,4)), 'outputs': outputs, 'targets': targets, 'strain': strain, 'GGo': GGo, 'output_data': output_data})
     
 
