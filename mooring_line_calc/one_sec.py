@@ -231,6 +231,9 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
     # Calculate the corresponding x_s and z_s values
     xs_values_sec1 = [xs1_eq_init.subs({s_sym: s_val}).evalf() for s_val in s1_values]
     zs_values_sec1 = [zs1_eq_init.subs({s_sym: s_val}).evalf() for s_val in s1_values]
+    
+    xs_values_sec2 = None
+    zs_values_sec2 = None
                
     if not lrd:
         xs_values_lrd, zs_values_lrd = None, None
@@ -269,7 +272,13 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
                     's1_values': s1_values,
                     's2_values': None,
                     'moortype': 'one_sec',
-                    'name': 'one_sec, LRD: ' + str(lrd.lrd_type if lrd else 'None') + ', Catenary' if seabed_contact else 'Taut'
+                    'name': 'one_sec, LRD: ' + str(lrd.lrd_type if lrd else 'None') + ', Catenary' if seabed_contact else 'Taut',
+                    'xs_values_sec1': xs_values_sec1,
+                    'zs_values_sec1': zs_values_sec1,
+                    'xs_values_lrd': xs_values_lrd,
+                    'zs_values_lrd': zs_values_lrd,
+                    'xs_values_sec2': xs_values_sec2,
+                    'zs_values_sec2': zs_values_sec2,
                     }
     print()
     

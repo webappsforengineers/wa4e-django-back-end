@@ -309,4 +309,31 @@ def initialise_mooring(request):
     print('Horizontal tension = ', init['ht0'] / 1e3 , 'kN')
     print('Required length of section 1 to achieve pre-tension = ', init['sec1_l'] , 'm')
     
-    return Response({'vertical_tension':init['vt0'], 'horizontal_tension': init['ht0'], 'required_section_1_length': init['sec1_l']})
+    return Response({
+                    # 'xf_eq': init['xf_eq'],
+                    #  'zf_eq': init['zf_eq'],
+                    #  'xs1_eq': init['xs1_eq'],
+                    #  'zs1_eq': init['zs1_eq'],
+                    #  'xs2_eq': init['xs2_eq'],
+                    #  'zs2_eq': init['zs2_eq'],
+                     'sec1_l': init['sec1_l'],
+                    #  'sec2_l': init['sec2_l'],
+                    #  'lrd_x': init['lrd_x'],
+                    #  'lrd_z': init['lrd_z'],
+                    #  'lrd_alpha': init['lrd_alpha'],
+                     'vt0':init['vt0'], 
+                     'ht0': init['ht0'],
+                    #  'xf0': init['xf0'],
+                    #  'zf0': init['zf0'],
+                    #  'lrd': init['lrd'],
+                    #  's1_values': init['s1_values'],
+                    #  's2_values': init['s2_values'],
+                    #  'moortype': init['moortype'],
+                    #  'name': init['name'],
+                    'xs_values_sec1': init['xs_values_sec1'],
+                    'zs_values_sec1': init['zs_values_sec1'],
+                    'xs_values_lrd': init['xs_values_lrd'],
+                    'zs_values_lrd': init['zs_values_lrd'],
+                    'xs_values_sec2': init['xs_values_sec2'],
+                    'zs_values_sec2': init['zs_values_sec2'],
+                     })

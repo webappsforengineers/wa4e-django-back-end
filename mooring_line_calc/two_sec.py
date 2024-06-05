@@ -340,7 +340,13 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
                         's1_values': s1_values,
                         's2_values': s2_values,
                         'moortype': 'two_sec' ,
-                        'name': 'one_sec, LRD: ' + str(lrd.lrd_type if lrd else 'None') + ', Catenary' if seabed_contact else 'Taut'
+                        'name': 'one_sec, LRD: ' + str(lrd.lrd_type if lrd else 'None') + ', Catenary' if seabed_contact else 'Taut',
+                        'xs_values_sec1': xs_values_sec1,
+                        'zs_values_sec1': zs_values_sec1,
+                        'xs_values_lrd': xs_values_lrd,
+                        'zs_values_lrd': zs_values_lrd,
+                        'xs_values_sec2': xs_values_sec2,
+                        'zs_values_sec2': zs_values_sec2,
                         }
       
     print()
