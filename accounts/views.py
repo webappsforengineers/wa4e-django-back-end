@@ -256,11 +256,14 @@ def initialise_mooring(request):
     
     if lrd_type == "1":
         lrd = None
+        tfi_l = None
+        tfi_d = None
     elif lrd_type == "2":
         # Tfi SeaSpring properties
         tfi_l = request.data.get('tfi_l')
         tfi_rt_kN = request.data.get('tfi_rt_kN')
         lrd = LrdDesign("tfi", tfi_l=tfi_l, tfi_rs=0.5, tfi_rt=tfi_rt_kN * 1e3)
+        tfi_d = lrd.tfi_d
 
     elif lrd_type == "3":
         # Dublin Offshore LRD properties
@@ -271,6 +274,8 @@ def initialise_mooring(request):
         do_rho = request.data.get('do_rho')
         do_theta = taut_angle if not seabed_contact else 45
         lrd = LrdDesign("do", do_d=do_d, do_l=do_l, do_h=do_h, do_v=do_v, do_theta=do_theta, do_rho=do_rho)
+        tfi_l = None
+        tfi_d = None
 
 
     if seabed_contact:  # Catenary mooring, meaning this is chain
@@ -361,4 +366,7 @@ def initialise_mooring(request):
                     
                     'at_values': at_values,
                     'ext_or_str_values': ext_or_str_values,
+                    
+                    'tfi_l': tfi_l,
+                    'tfi_d': tfi_d,
                      })
