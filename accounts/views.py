@@ -253,7 +253,7 @@ def initialise_mooring(request):
     preten = request.data.get('preten') * 1e3
 
     lrd_type = request.data.get('lrd_type')
-
+    
     if lrd_type == "1":
         lrd = None
     elif lrd_type == "2":
@@ -309,6 +309,28 @@ def initialise_mooring(request):
     print('Horizontal tension = ', init['ht0'] / 1e3 , 'kN')
     print('Required length of section 1 to achieve pre-tension = ', init['sec1_l'] , 'm')
     
+    # variables for LRD stiffness curve
+    
+    if lrd_type == "1":
+        at_values = []
+        ext_or_str_values = []
+    # Generate 100 evenly spaced axial tension values between T_min and T_max
+    elif lrd_type == "2":   
+        tfi_rt = tfi_rt_kN * 1e3
+        at_values = np.linspace(0.0, tfi_rt * 1.5, 100)
+        print('at_values:', at_values)
+        # Get modelled data from stiffness equation
+        ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
+        print('ext_or_str_values:', ext_or_str_values)
+    elif lrd_type == "3":
+        at_values = np.linspace(0.1, lrd.do_fg * 4, 100)
+        ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
+        
+    # Convert numpy floats to Python floats
+    at_values = [float(value) for value in at_values]
+    ext_or_str_values = [float(value) for value in ext_or_str_values]
+
+    
     return Response({
                     # 'xf_eq': init['xf_eq'],
                     #  'zf_eq': init['zf_eq'],
@@ -336,4 +358,7 @@ def initialise_mooring(request):
                     'zs_values_lrd': init['zs_values_lrd'],
                     'xs_values_sec2': init['xs_values_sec2'],
                     'zs_values_sec2': init['zs_values_sec2'],
+                    
+                    'at_values': at_values,
+                    'ext_or_str_values': ext_or_str_values,
                      })
