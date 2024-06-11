@@ -258,12 +258,31 @@ def initialise_mooring(request):
         lrd = None
         tfi_l = None
         tfi_d = None
+        
+        do_l = None
+        do_d = None
+        do_h = None
+        do_v = None
+        do_rho = None
+        do_theta = None
+        do_hba = None
+        do_o = None
+        
     elif lrd_type == "2":
         # Tfi SeaSpring properties
         tfi_l = request.data.get('tfi_l')
         tfi_rt_kN = request.data.get('tfi_rt_kN')
         lrd = LrdDesign("tfi", tfi_l=tfi_l, tfi_rs=0.5, tfi_rt=tfi_rt_kN * 1e3)
         tfi_d = lrd.tfi_d
+        
+        do_l = None
+        do_d = None
+        do_h = None
+        do_v = None
+        do_rho = None
+        do_theta = None
+        do_hba = None
+        do_o = None
 
     elif lrd_type == "3":
         # Dublin Offshore LRD properties
@@ -274,6 +293,8 @@ def initialise_mooring(request):
         do_rho = request.data.get('do_rho')
         do_theta = taut_angle if not seabed_contact else 45
         lrd = LrdDesign("do", do_d=do_d, do_l=do_l, do_h=do_h, do_v=do_v, do_theta=do_theta, do_rho=do_rho)
+        do_hba = lrd.do_hba
+        do_o = lrd.do_o
         tfi_l = None
         tfi_d = None
 
@@ -369,4 +390,14 @@ def initialise_mooring(request):
                     
                     'tfi_l': tfi_l,
                     'tfi_d': tfi_d,
+                    
+                    'do_l': do_l,
+                    'do_d': do_d,
+                    'do_h': do_h,
+                    'do_v': do_v,
+                    'do_rho': do_rho,
+                    'do_theta': do_theta,
+                    'do_hba': do_hba,
+                    'do_o': do_o,
+
                      })
