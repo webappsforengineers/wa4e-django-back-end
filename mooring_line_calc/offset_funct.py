@@ -85,6 +85,5 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
         if lrd:lrd_z_val = float(lrd_z.subs(subs_dict))
         if lrd and lrd.lrd_type == 'do' : lrd_alpha_val_rad = lrd_alpha.subs(subs_dict) # Get the alpha value in radians
                     
-   
-    print(tension_values, displacement_values)
+    return tension_values, displacement_values
     

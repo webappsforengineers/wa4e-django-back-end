@@ -1,5 +1,5 @@
 from django.urls import include, path, re_path
-from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, train_model, initialise_mooring
+from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, train_model, initialise_mooring, run_qs_offset
 
 
 
@@ -16,4 +16,5 @@ urlpatterns = [
     # path('preprocess-data/', preprocess_data, name='preprocess-data'),
     path('train-model/', train_model, name='train-model'),
     path('initialise-mooring/', initialise_mooring, name='initialise-mooring'),
+    path('run-qs-offset/', run_qs_offset, name='run-qs-offset'),
 ]
