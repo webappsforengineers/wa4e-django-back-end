@@ -84,6 +84,29 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
         if lrd:lrd_x_val = float(lrd_x.subs(subs_dict))
         if lrd:lrd_z_val = float(lrd_z.subs(subs_dict))
         if lrd and lrd.lrd_type == 'do' : lrd_alpha_val_rad = lrd_alpha.subs(subs_dict) # Get the alpha value in radians
+        
+        # Calculate the corresponding x_s and z_s values
+        xs_values_sec1 = [xs1_eq_num.subs({s_sym: s_val}).evalf() for s_val in s1_values]
+        zs_values_sec1 = [zs1_eq_num.subs({s_sym: s_val}).evalf() for s_val in s1_values]
+        # Evaluate top of first section xf1 and zf1 using xs and zs eq and reqd length
+        xf1_val = xs1_eq_num.subs({s_sym: sec1_l}).evalf()
+        zf1_val = zs1_eq_num.subs({s_sym: sec1_l}).evalf()
+        # Evaluate top of second section xf2 and zf2 using xs and zs eq and sec2 length            
+        xf2_val = xs2_eq_num.subs({s_sym: sec2_l}).evalf() if moortype == 'two_sec' else 0
+        zf2_val = zs2_eq_num.subs({s_sym: sec2_l}).evalf() if moortype == 'two_sec' else 0
+        xs_values_sec2 = [xs2_eq_num.subs({s_sym: s_val}).evalf() + xf1_val for s_val in s2_values ] if moortype == 'two_sec' else None
+        zs_values_sec2 = [zs2_eq_num.subs({s_sym: s_val}).evalf() + zf1_val for s_val in s2_values ] if moortype == 'two_sec' else None 
+        # Evaluate LRD profile
+        xs_values_lrd = None if not lrd else [xf2_val + xf1_val, xf2_val + xf1_val + lrd_x_val]
+        zs_values_lrd = None if not lrd else [zf2_val + zf1_val, zf2_val + zf1_val + lrd_z_val]
+        
+        # Convert all to floats for plotly
+        xs_values_sec1 = [float(x) for x in xs_values_sec1]
+        zs_values_sec1 = [float(z) for z in zs_values_sec1]
+        if moortype == 'two_sec': xs_values_sec2 = [float(x) for x in xs_values_sec2] 
+        if moortype == 'two_sec': zs_values_sec2 = [float(z) for z in zs_values_sec2]
+        if xs_values_lrd: xs_values_lrd = [float(x) for x in xs_values_lrd]
+        if zs_values_lrd: zs_values_lrd = [float(z) for z in zs_values_lrd]
                     
     return tension_values, displacement_values
     
