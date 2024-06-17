@@ -548,10 +548,16 @@ def run_qs_offset(request):
     
     max_offset = request.data.get('max_offset')
     resolution = request.data.get('resolution')
-    tension_values, displacement_values = qs_offset(init, max_offset, resolution)
+    tension_values, displacement_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd = qs_offset(init, max_offset, resolution)
 
     
     return Response({ 
                      'tension_values': tension_values,
-                     'displacement_values': displacement_values
+                     'displacement_values': displacement_values,
+                     'all_xs_values_sec1': all_xs_values_sec1,
+                     'all_zs_values_sec1': all_zs_values_sec1,
+                     'all_xs_values_sec2': all_xs_values_sec2,
+                     'all_zs_values_sec2': all_zs_values_sec2,
+                     'all_xs_values_lrd': all_xs_values_lrd,
+                     'all_zs_values_lrd': all_zs_values_lrd,
                      })

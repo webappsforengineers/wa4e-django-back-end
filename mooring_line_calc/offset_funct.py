@@ -21,9 +21,13 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     
     # Initialize list to store results
     tension_values = []
-    frames_line_profile = []
-    frames_lrd_drawing = []
-    frames_lrd_stiffness = []
+    all_xs_values_sec1 = []
+    all_zs_values_sec1 = []
+    all_xs_values_sec2 = []
+    all_zs_values_sec2 = []
+    all_xs_values_lrd = []
+    all_zs_values_lrd = []
+    
     
     # Generate displacement values
     displacement_values = displacement_values = np.linspace(0, max_offset, num= int(max_offset * resolution))
@@ -107,6 +111,13 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
         if moortype == 'two_sec': zs_values_sec2 = [float(z) for z in zs_values_sec2]
         if xs_values_lrd: xs_values_lrd = [float(x) for x in xs_values_lrd]
         if zs_values_lrd: zs_values_lrd = [float(z) for z in zs_values_lrd]
+        
+        all_xs_values_sec1.append(xs_values_sec1)
+        all_zs_values_sec1.append(zs_values_sec1)
+        all_xs_values_sec2.append(xs_values_sec2)
+        all_zs_values_sec2.append(zs_values_sec2)
+        all_xs_values_lrd.append(xs_values_lrd)
+        all_zs_values_lrd.append(zs_values_lrd)
                     
-    return tension_values, displacement_values
+    return tension_values, displacement_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd
     
