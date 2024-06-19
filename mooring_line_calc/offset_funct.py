@@ -3,7 +3,7 @@ import sympy as sp
 # import plotly.graph_objects as go
 from scipy.optimize import anderson
 from scipy.optimize.nonlin import NoConvergence
-from mooring_line_calc.helpers import plot_profile, plot_tension_offset, animate
+# from mooring_line_calc.helpers import plot_profile, plot_tension_offset, animate
 
 def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True):
     '''

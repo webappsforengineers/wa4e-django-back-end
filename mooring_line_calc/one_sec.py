@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 from scipy.optimize import fsolve
 from mooring_line_calc.lrd_module import LrdDesign, get_lrd_strain
-from mooring_line_calc.helpers import get_fairlead_equations, get_profile_equations, plot_profile
+from mooring_line_calc.helpers import get_fairlead_equations, get_profile_equations
 import math
 
 
