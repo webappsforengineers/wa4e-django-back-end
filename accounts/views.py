@@ -528,32 +528,34 @@ def run_qs_offset(request):
     # variables for LRD stiffness curve
     
     if lrd_type == "1":
-        at_values = []
-        ext_or_str_values = []
+        at_values_qs_offset = []
+        ext_or_str_values_qs_offset = []
     # Generate 100 evenly spaced axial tension values between T_min and T_max
     elif lrd_type == "2":   
         tfi_rt = tfi_rt_kN * 1e3
-        at_values = np.linspace(0.0, tfi_rt * 1.5, 100)
-        print('at_values:', at_values)
+        at_values_qs_offset = np.linspace(0.0, tfi_rt * 1.5, 100)
         # Get modelled data from stiffness equation
-        ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
-        print('ext_or_str_values:', ext_or_str_values)
+        ext_or_str_values_qs_offset = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset]
     elif lrd_type == "3":
-        at_values = np.linspace(0.1, lrd.do_fg * 4, 100)
-        ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
+        at_values_qs_offset = np.linspace(0.1, lrd.do_fg * 4, 100)
+        ext_or_str_values_qs_offset = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset]
         
     # Convert numpy floats to Python floats
-    at_values = [float(value) for value in at_values]
-    ext_or_str_values = [float(value) for value in ext_or_str_values]
+    at_values_qs_offset = [float(value) for value in at_values_qs_offset]
+    ext_or_str_values_qs_offset = [float(value) for value in ext_or_str_values_qs_offset]
     
     max_offset = request.data.get('max_offset')
     resolution = request.data.get('resolution')
-    tension_values, displacement_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd = qs_offset(init, max_offset, resolution)
+    tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd = qs_offset(
+        init, max_offset, resolution)
 
     
     return Response({ 
+                     'at_values_qs_offset': at_values_qs_offset,
+                     'ext_or_str_values_qs_offset': ext_or_str_values_qs_offset,
                      'tension_values': tension_values,
                      'displacement_values': displacement_values,
+                     'all_current_ext_or_str_values': all_current_ext_or_str_values,
                      'all_xs_values_sec1': all_xs_values_sec1,
                      'all_zs_values_sec1': all_zs_values_sec1,
                      'all_xs_values_sec2': all_xs_values_sec2,
