@@ -28,6 +28,7 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     all_zs_values_sec2 = []
     all_xs_values_lrd = []
     all_zs_values_lrd = []
+    all_tfi_current_lengths = []
     
     
     # Generate displacement values
@@ -127,10 +128,14 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
                 ext_or_str =  lrd_extension
             else:
                 ext_or_str = (lrd_extension - lrd.l) / lrd.l
+                extension = lrd_extension - lrd.l
+                current_length = lrd.l + extension
+                all_tfi_current_lengths.append(current_length)
             
             all_current_ext_or_str_values.append(ext_or_str)
+            
         
         
                     
-    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd
+    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths
     
