@@ -29,7 +29,11 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     all_xs_values_lrd = []
     all_zs_values_lrd = []
     all_tfi_current_lengths = []
-    
+    all_ml_angles = []
+    all_full_rectangles_rotated = []
+    all_bottom_rectangles_rotated = []
+    all_top_hinges_rotated = []
+    all_bottom_hinges_rotated = []
     
     # Generate displacement values
     displacement_values = displacement_values = np.linspace(0, max_offset, num= int(max_offset * resolution))
@@ -126,6 +130,49 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
 
             if lrd.lrd_type == 'do':
                 ext_or_str =  lrd_extension
+                lrd_alpha_val = np.degrees(float(lrd_alpha_val_rad))
+                
+                # Create rotation matrix
+                theta = np.radians(lrd_alpha_val)
+                rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+                # Calculate hinge points before rotation
+                top_hinge    = np.array([lrd.do_d / 2 + lrd.do_h / 2, lrd.do_l / 2 + lrd.do_v / 2])
+                bottom_hinge = np.array([lrd.do_d / 2 - lrd.do_h / 2, lrd.do_l / 2 - lrd.do_v / 2])
+                
+                # Calculate the new origin
+                new_origin = (top_hinge + bottom_hinge) / 2
+                
+                # Create the rectangles around the new origin
+                full_rectangle = np.array([
+                    [0 - new_origin[0], 0 - new_origin[1]],
+                    [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+                    [lrd.do_d - new_origin[0], lrd.do_l - new_origin[1]],
+                    [0 - new_origin[0], lrd.do_l - new_origin[1]],
+                    [0 - new_origin[0], 0 - new_origin[1]]
+                ]).T
+                
+                bottom_rectangle = np.array([
+                    [0 - new_origin[0], 0 - new_origin[1]],
+                    [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+                    [lrd.do_d - new_origin[0], (lrd.do_hba) - new_origin[1]],
+                    [0 - new_origin[0], (lrd.do_hba) - new_origin[1]],
+                    [0 - new_origin[0], 0 - new_origin[1]]
+                ]).T
+                
+                # Rotate rectangles and hinge points
+                full_rectangle_rotated = np.dot(rotation_matrix, full_rectangle)
+                bottom_rectangle_rotated = np.dot(rotation_matrix, bottom_rectangle)
+                top_hinge_rotated = np.dot(rotation_matrix, top_hinge - new_origin)
+                bottom_hinge_rotated = np.dot(rotation_matrix, bottom_hinge - new_origin)
+                
+                all_full_rectangles_rotated.append(full_rectangle_rotated)
+                all_bottom_rectangles_rotated.append(bottom_rectangle_rotated)
+                all_top_hinges_rotated.append(top_hinge_rotated)
+                all_bottom_hinges_rotated.append(bottom_hinge_rotated)
+                
+                angle = np.radians(90 - ml_angle)
+                
+                all_ml_angles.append(angle)
             else:
                 ext_or_str = (lrd_extension - lrd.l) / lrd.l
                 extension = lrd_extension - lrd.l
@@ -137,5 +184,5 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
         
         
                     
-    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths
+    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated
     

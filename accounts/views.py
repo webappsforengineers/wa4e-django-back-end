@@ -546,7 +546,7 @@ def run_qs_offset(request):
     
     max_offset = request.data.get('max_offset')
     resolution = request.data.get('resolution')
-    tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths = qs_offset(
+    tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated = qs_offset(
         init, max_offset, resolution)
 
     
@@ -566,4 +566,11 @@ def run_qs_offset(request):
                      'tfi_l_qs_offset': tfi_l,
                      'tfi_d_qs_offset': tfi_d,
                      'all_tfi_current_lengths': all_tfi_current_lengths,
+                     
+                     'all_ml_angles': all_ml_angles, 
+                     'all_full_rectangles_rotated': all_full_rectangles_rotated, 
+                     'all_bottom_rectangles_rotated': all_bottom_rectangles_rotated,
+                     'all_top_hinges_rotated': all_top_hinges_rotated,
+                     'all_bottom_hinges_rotated': all_bottom_hinges_rotated,
+    
                      })
