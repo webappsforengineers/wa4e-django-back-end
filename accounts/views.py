@@ -694,4 +694,7 @@ def calculate_wlgr(request):
         'sus': sus,
         'Gs': Gs,
         'Ds': Ds,
+        'e0': e0,
+        'su0': su0,
+        'G0': G0,
         })
