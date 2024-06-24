@@ -18,6 +18,8 @@ from mooring_line_calc.lrd_module import LrdDesign, get_lrd_strain
 from mooring_line_calc.one_sec import one_sec_init
 from mooring_line_calc.two_sec import two_sec_init
 from mooring_line_calc.offset_funct import qs_offset
+from wlgr_calc.model_functions import pwp_acc, update_properties, update_applied_loads, findOCR, consolidate
+
 import math
 
 # User accounts
@@ -574,3 +576,122 @@ def run_qs_offset(request):
                      'all_bottom_hinges_rotated': all_bottom_hinges_rotated,
     
                      })
+
+@api_view(['POST'])
+def calculate_wlgr(request):
+    # === INPUT ===
+    # soil material parameters
+    kappa_oed = request.data.get('kappa_oed')
+    lambda_NCL = request.data.get('lambda_ncl')
+    gamma_NCL = request.data.get('gamma_ncl')
+    gamma_CSL = request.data.get('gamma_csl')
+    su0_sigmav = request.data.get('su0_sigmav')
+
+
+    # === DEFAULT MODEL PARAMETERS ===
+    #SN curves
+    k1 = 0.626
+    k2_OCR1 = 0.41335
+    k3 = 6.517
+    k4 = 0.001
+
+    a = -0.42
+    b = 0.45
+    c = 0 
+    d = 0 
+
+    #A0 su fit
+    c_A0 = -22.57
+    d_A0 = 4.9541
+
+    #kappa-D-eR
+    zeta = 1.15 
+    rho = 12 
+    m = 0.05 
+    p = 2.85 
+    q = 1 
+
+    G_su_nc = 1000
+    r = 0.8
+
+
+    # === INITIAL PARAMETERS
+    # soil parameters
+    sigmavc = request.data.get('sigmavc')
+    OCR = 1
+    sigmav = sigmavc
+
+    e0 = gamma_NCL - lambda_NCL * (np.log(sigmavc)) 
+    e = e0
+
+    su0 = sigmavc * su0_sigmav #kPa
+    su = su0
+
+    G0 = G_su_nc * su0 #kPa
+    G = G0
+
+    kappa = kappa_oed
+
+    # applied loading
+    tau_su_per_episode = request.data.get('tau_su_per_episode')
+    ncyc_per_episode = request.data.get('ncyc_per_episode')
+    n_episodes = request.data.get('n_episodes')
+    loading_DSS_app = [[tau_su_per_episode, ncyc_per_episode]]
+    tau = tau_su_per_episode * su0
+
+
+    # === create result lists for plotting ===
+    Ds = [0]
+    es = [e0]
+    sigmavs = [sigmavc]
+    kappas = [kappa_oed]
+    OCRs = [OCR]
+    sus = [su0]
+    Gs = [G0]
+    i_episode = [0]
+
+
+    # === run simuation ===
+    for i in range(n_episodes):
+        D, k2, Ncarry = pwp_acc(loading_DSS_app, k1, k2_OCR1, k3, k4, a, b, OCR)
+        Ds.append(D)
+        sigmav = sigmav - (D * sigmavc)
+        sigmavs.append(sigmav)
+        # es.append(e)
+        # kappas.append(kappa)
+        # i_episode.append(i+1)
+
+        OCR = findOCR(e, kappa, sigmav, gamma_NCL, lambda_NCL)
+        # OCRs.append(OCR)
+        # sus.append(su)
+        # Gs.append(G)
+
+        e, kappa, OCR = consolidate(
+            kappa_oed, sigmavc, gamma_NCL, gamma_CSL, lambda_NCL, 
+            OCR, D, e, es[0], 
+            m, p, q, zeta, rho
+            )
+        sigmav = sigmavc
+        # sigmavs.append(sigmav)
+        es.append(e)
+        kappas.append(kappa)
+        OCRs.append(OCR)
+        # Ds.append(0)
+        i_episode.append(i+1)
+
+        su, G = update_properties(kappa_oed, lambda_NCL, D, su, r, su0, G0, c_A0, d_A0, tau, sigmav)
+        sus.append(su)
+        Gs.append(G)
+
+        loading_DSS_app = update_applied_loads(loading_DSS_app, su0, su)
+        
+    return Response({
+        'i_episode': i_episode,
+        'es': es, 
+        'sigmavs': sigmavs,
+        'kappas': kappas,
+        'OCRs': OCRs,
+        'sus': sus,
+        'Gs': Gs,
+        'Ds': Ds,
+        })
