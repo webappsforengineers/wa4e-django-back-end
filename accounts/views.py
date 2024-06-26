@@ -649,6 +649,12 @@ def calculate_wlgr(request):
     sus = [su0]
     Gs = [G0]
     i_episode = [0]
+    sigmavs_all = [sigmavc]
+    es_all = [e0]
+    
+    xs_NCL = np.linspace(1, 500, 5)
+    ys_NCL = [gamma_NCL - lambda_NCL * np.log(x) for x in xs_NCL]
+    ys_CSL = [gamma_CSL - lambda_NCL * np.log(x) for x in xs_NCL]
 
 
     # === run simuation ===
@@ -657,7 +663,8 @@ def calculate_wlgr(request):
         Ds.append(D)
         sigmav = sigmav - (D * sigmavc)
         sigmavs.append(sigmav)
-        # es.append(e)
+        sigmavs_all.append(sigmav)
+        es_all.append(e)
         # kappas.append(kappa)
         # i_episode.append(i+1)
 
@@ -672,8 +679,9 @@ def calculate_wlgr(request):
             m, p, q, zeta, rho
             )
         sigmav = sigmavc
-        # sigmavs.append(sigmav)
+        sigmavs_all.append(sigmav)
         es.append(e)
+        es_all.append(e)
         kappas.append(kappa)
         OCRs.append(OCR)
         # Ds.append(0)
@@ -684,11 +692,16 @@ def calculate_wlgr(request):
         Gs.append(G)
 
         loading_DSS_app = update_applied_loads(loading_DSS_app, su0, su)
+    
+    # print(i_episode, es, sigmavs, kappas, OCRs, sus, Gs, Ds, e0, su0, G0, xs_NCL, ys_NCL, ys_CSL)
+        
         
     return Response({
         'i_episode': i_episode,
         'es': es, 
+        'es_all': es_all,
         'sigmavs': sigmavs,
+        'sigmavs_all': sigmavs_all,
         'kappas': kappas,
         'OCRs': OCRs,
         'sus': sus,
@@ -697,4 +710,7 @@ def calculate_wlgr(request):
         'e0': e0,
         'su0': su0,
         'G0': G0,
+        'xs_NCL': xs_NCL,
+        'ys_NCL': ys_NCL,
+        'ys_CSL': ys_CSL,
         })
