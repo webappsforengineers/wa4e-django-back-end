@@ -96,3 +96,23 @@ def update_applied_loads(storm_loads_norm_su, su0, su_new):
        load_new =  [load[0] / su_ratio, load[1]]
        new_loads.append(load_new)
     return new_loads
+
+def check_failure(D, e, sigmav, lambda_NCL, gamma_CSL):
+    
+    print('D', D)
+ 
+    if D > 1:
+        has_failed = True
+ 
+    e_CSL = gamma_CSL - lambda_NCL * np.log(sigmav)
+    
+    print('e_CSL', e_CSL)
+    print('e', e)
+    
+    if e < e_CSL:
+        has_failed = True
+    
+    else:
+        has_failed = False
+        
+    return has_failed

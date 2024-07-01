@@ -18,7 +18,7 @@ from mooring_line_calc.lrd_module import LrdDesign, get_lrd_strain
 from mooring_line_calc.one_sec import one_sec_init
 from mooring_line_calc.two_sec import two_sec_init
 from mooring_line_calc.offset_funct import qs_offset
-from wlgr_calc.model_functions import pwp_acc, update_properties, update_applied_loads, findOCR, consolidate
+from wlgr_calc.model_functions import pwp_acc, update_properties, update_applied_loads, findOCR, consolidate, check_failure
 
 import math
 
@@ -651,6 +651,7 @@ def calculate_wlgr(request):
     i_episode = [0]
     sigmavs_all = [sigmavc]
     es_all = [e0]
+    failures = [False]
     
     xs_NCL = np.linspace(1, 500, 5)
     ys_NCL = [gamma_NCL - lambda_NCL * np.log(x) for x in xs_NCL]
@@ -667,6 +668,9 @@ def calculate_wlgr(request):
         es_all.append(e)
         # kappas.append(kappa)
         # i_episode.append(i+1)
+        
+        failure = check_failure(D, e, sigmav, lambda_NCL, gamma_CSL)
+        failures.append(failure)
 
         OCR = findOCR(e, kappa, sigmav, gamma_NCL, lambda_NCL)
         # OCRs.append(OCR)
@@ -713,4 +717,5 @@ def calculate_wlgr(request):
         'xs_NCL': xs_NCL,
         'ys_NCL': ys_NCL,
         'ys_CSL': ys_CSL,
+        'failures': failures,
         })
