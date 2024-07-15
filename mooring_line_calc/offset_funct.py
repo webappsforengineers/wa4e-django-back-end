@@ -95,92 +95,94 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
         if lrd:lrd_z_val = float(lrd_z.subs(subs_dict))
         if lrd and lrd.lrd_type == 'do' : lrd_alpha_val_rad = lrd_alpha.subs(subs_dict) # Get the alpha value in radians
         
-        # Calculate the corresponding x_s and z_s values
-        xs_values_sec1 = [xs1_eq_num.subs({s_sym: s_val}).evalf() for s_val in s1_values]
-        zs_values_sec1 = [zs1_eq_num.subs({s_sym: s_val}).evalf() for s_val in s1_values]
-        # Evaluate top of first section xf1 and zf1 using xs and zs eq and reqd length
-        xf1_val = xs1_eq_num.subs({s_sym: sec1_l}).evalf()
-        zf1_val = zs1_eq_num.subs({s_sym: sec1_l}).evalf()
-        # Evaluate top of second section xf2 and zf2 using xs and zs eq and sec2 length            
-        xf2_val = xs2_eq_num.subs({s_sym: sec2_l}).evalf() if moortype == 'two_sec' else 0
-        zf2_val = zs2_eq_num.subs({s_sym: sec2_l}).evalf() if moortype == 'two_sec' else 0
-        xs_values_sec2 = [xs2_eq_num.subs({s_sym: s_val}).evalf() + xf1_val for s_val in s2_values ] if moortype == 'two_sec' else None
-        zs_values_sec2 = [zs2_eq_num.subs({s_sym: s_val}).evalf() + zf1_val for s_val in s2_values ] if moortype == 'two_sec' else None 
-        # Evaluate LRD profile
-        xs_values_lrd = None if not lrd else [xf2_val + xf1_val, xf2_val + xf1_val + lrd_x_val]
-        zs_values_lrd = None if not lrd else [zf2_val + zf1_val, zf2_val + zf1_val + lrd_z_val]
+        if profile_plot:
         
-        # Convert all to floats for plotly
-        xs_values_sec1 = [float(x) for x in xs_values_sec1]
-        zs_values_sec1 = [float(z) for z in zs_values_sec1]
-        if moortype == 'two_sec': xs_values_sec2 = [float(x) for x in xs_values_sec2] 
-        if moortype == 'two_sec': zs_values_sec2 = [float(z) for z in zs_values_sec2]
-        if xs_values_lrd: xs_values_lrd = [float(x) for x in xs_values_lrd]
-        if zs_values_lrd: zs_values_lrd = [float(z) for z in zs_values_lrd]
-        
-        all_xs_values_sec1.append(xs_values_sec1)
-        all_zs_values_sec1.append(zs_values_sec1)
-        all_xs_values_sec2.append(xs_values_sec2)
-        all_zs_values_sec2.append(zs_values_sec2)
-        all_xs_values_lrd.append(xs_values_lrd)
-        all_zs_values_lrd.append(zs_values_lrd)
-        
-        if lrd:
-            lrd_extension = np.sqrt(lrd_x_val**2 + lrd_z_val**2)
+            # Calculate the corresponding x_s and z_s values
+            xs_values_sec1 = [xs1_eq_num.subs({s_sym: s_val}).evalf() for s_val in s1_values]
+            zs_values_sec1 = [zs1_eq_num.subs({s_sym: s_val}).evalf() for s_val in s1_values]
+            # Evaluate top of first section xf1 and zf1 using xs and zs eq and reqd length
+            xf1_val = xs1_eq_num.subs({s_sym: sec1_l}).evalf()
+            zf1_val = zs1_eq_num.subs({s_sym: sec1_l}).evalf()
+            # Evaluate top of second section xf2 and zf2 using xs and zs eq and sec2 length            
+            xf2_val = xs2_eq_num.subs({s_sym: sec2_l}).evalf() if moortype == 'two_sec' else 0
+            zf2_val = zs2_eq_num.subs({s_sym: sec2_l}).evalf() if moortype == 'two_sec' else 0
+            xs_values_sec2 = [xs2_eq_num.subs({s_sym: s_val}).evalf() + xf1_val for s_val in s2_values ] if moortype == 'two_sec' else None
+            zs_values_sec2 = [zs2_eq_num.subs({s_sym: s_val}).evalf() + zf1_val for s_val in s2_values ] if moortype == 'two_sec' else None 
+            # Evaluate LRD profile
+            xs_values_lrd = None if not lrd else [xf2_val + xf1_val, xf2_val + xf1_val + lrd_x_val]
+            zs_values_lrd = None if not lrd else [zf2_val + zf1_val, zf2_val + zf1_val + lrd_z_val]
+            
+            # Convert all to floats for plotly
+            xs_values_sec1 = [float(x) for x in xs_values_sec1]
+            zs_values_sec1 = [float(z) for z in zs_values_sec1]
+            if moortype == 'two_sec': xs_values_sec2 = [float(x) for x in xs_values_sec2] 
+            if moortype == 'two_sec': zs_values_sec2 = [float(z) for z in zs_values_sec2]
+            if xs_values_lrd: xs_values_lrd = [float(x) for x in xs_values_lrd]
+            if zs_values_lrd: zs_values_lrd = [float(z) for z in zs_values_lrd]
+            
+            all_xs_values_sec1.append(xs_values_sec1)
+            all_zs_values_sec1.append(zs_values_sec1)
+            all_xs_values_sec2.append(xs_values_sec2)
+            all_zs_values_sec2.append(zs_values_sec2)
+            all_xs_values_lrd.append(xs_values_lrd)
+            all_zs_values_lrd.append(zs_values_lrd)
+            
+            if lrd:
+                lrd_extension = np.sqrt(lrd_x_val**2 + lrd_z_val**2)
 
-            if lrd.lrd_type == 'do':
-                ext_or_str =  lrd_extension
-                lrd_alpha_val = np.degrees(float(lrd_alpha_val_rad))
+                if lrd.lrd_type == 'do':
+                    ext_or_str =  lrd_extension
+                    lrd_alpha_val = np.degrees(float(lrd_alpha_val_rad))
+                    
+                    # Create rotation matrix
+                    theta = np.radians(lrd_alpha_val)
+                    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+                    # Calculate hinge points before rotation
+                    top_hinge    = np.array([lrd.do_d / 2 + lrd.do_h / 2, lrd.do_l / 2 + lrd.do_v / 2])
+                    bottom_hinge = np.array([lrd.do_d / 2 - lrd.do_h / 2, lrd.do_l / 2 - lrd.do_v / 2])
+                    
+                    # Calculate the new origin
+                    new_origin = (top_hinge + bottom_hinge) / 2
+                    
+                    # Create the rectangles around the new origin
+                    full_rectangle = np.array([
+                        [0 - new_origin[0], 0 - new_origin[1]],
+                        [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+                        [lrd.do_d - new_origin[0], lrd.do_l - new_origin[1]],
+                        [0 - new_origin[0], lrd.do_l - new_origin[1]],
+                        [0 - new_origin[0], 0 - new_origin[1]]
+                    ]).T
+                    
+                    bottom_rectangle = np.array([
+                        [0 - new_origin[0], 0 - new_origin[1]],
+                        [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+                        [lrd.do_d - new_origin[0], (lrd.do_hba) - new_origin[1]],
+                        [0 - new_origin[0], (lrd.do_hba) - new_origin[1]],
+                        [0 - new_origin[0], 0 - new_origin[1]]
+                    ]).T
+                    
+                    # Rotate rectangles and hinge points
+                    full_rectangle_rotated = np.dot(rotation_matrix, full_rectangle)
+                    bottom_rectangle_rotated = np.dot(rotation_matrix, bottom_rectangle)
+                    top_hinge_rotated = np.dot(rotation_matrix, top_hinge - new_origin)
+                    bottom_hinge_rotated = np.dot(rotation_matrix, bottom_hinge - new_origin)
+                    
+                    all_full_rectangles_rotated.append(full_rectangle_rotated)
+                    all_bottom_rectangles_rotated.append(bottom_rectangle_rotated)
+                    all_top_hinges_rotated.append(top_hinge_rotated)
+                    all_bottom_hinges_rotated.append(bottom_hinge_rotated)
+                    
+                    angle = np.radians(90 - ml_angle)
+                    
+                    all_ml_angles.append(angle)
+                else:
+                    ext_or_str = (lrd_extension - lrd.l) / lrd.l
+                    extension = lrd_extension - lrd.l
+                    current_length = lrd.l + extension
+                    all_tfi_current_lengths.append(current_length)
                 
-                # Create rotation matrix
-                theta = np.radians(lrd_alpha_val)
-                rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
-                # Calculate hinge points before rotation
-                top_hinge    = np.array([lrd.do_d / 2 + lrd.do_h / 2, lrd.do_l / 2 + lrd.do_v / 2])
-                bottom_hinge = np.array([lrd.do_d / 2 - lrd.do_h / 2, lrd.do_l / 2 - lrd.do_v / 2])
+                all_current_ext_or_str_values.append(ext_or_str)
                 
-                # Calculate the new origin
-                new_origin = (top_hinge + bottom_hinge) / 2
-                
-                # Create the rectangles around the new origin
-                full_rectangle = np.array([
-                    [0 - new_origin[0], 0 - new_origin[1]],
-                    [lrd.do_d - new_origin[0], 0 - new_origin[1]],
-                    [lrd.do_d - new_origin[0], lrd.do_l - new_origin[1]],
-                    [0 - new_origin[0], lrd.do_l - new_origin[1]],
-                    [0 - new_origin[0], 0 - new_origin[1]]
-                ]).T
-                
-                bottom_rectangle = np.array([
-                    [0 - new_origin[0], 0 - new_origin[1]],
-                    [lrd.do_d - new_origin[0], 0 - new_origin[1]],
-                    [lrd.do_d - new_origin[0], (lrd.do_hba) - new_origin[1]],
-                    [0 - new_origin[0], (lrd.do_hba) - new_origin[1]],
-                    [0 - new_origin[0], 0 - new_origin[1]]
-                ]).T
-                
-                # Rotate rectangles and hinge points
-                full_rectangle_rotated = np.dot(rotation_matrix, full_rectangle)
-                bottom_rectangle_rotated = np.dot(rotation_matrix, bottom_rectangle)
-                top_hinge_rotated = np.dot(rotation_matrix, top_hinge - new_origin)
-                bottom_hinge_rotated = np.dot(rotation_matrix, bottom_hinge - new_origin)
-                
-                all_full_rectangles_rotated.append(full_rectangle_rotated)
-                all_bottom_rectangles_rotated.append(bottom_rectangle_rotated)
-                all_top_hinges_rotated.append(top_hinge_rotated)
-                all_bottom_hinges_rotated.append(bottom_hinge_rotated)
-                
-                angle = np.radians(90 - ml_angle)
-                
-                all_ml_angles.append(angle)
-            else:
-                ext_or_str = (lrd_extension - lrd.l) / lrd.l
-                extension = lrd_extension - lrd.l
-                current_length = lrd.l + extension
-                all_tfi_current_lengths.append(current_length)
-            
-            all_current_ext_or_str_values.append(ext_or_str)
-            
         
         
                     
