@@ -5,9 +5,9 @@ Created on Thu Jun  1 11:57:55 2023
 @author: ogf1n20
 """
 
-# import matplotlib.pyplot as plt
-# import matplotlib.image as mpimg
-# import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import plotly.graph_objects as go
 from scipy.interpolate import make_interp_spline
 import pandas as pd
 import sympy as sp
@@ -73,8 +73,15 @@ class LrdDesign:
             self.do_fb  = (self.do_l * (np.pi * self.do_d ** 2) / 4) * RHO_W_N - self.do_ssw_n  # buoyancy force of the full LRD in N (minus structural steel weight)
             print('Fb =')
             print(self.do_fb)
-        
-def get_lrd_strain(lrd, form, **kwargs):
+
+    def _convert_to_float(self, value):
+        if isinstance(value, sp.core.numbers.Float):
+            return float(value)
+        if isinstance(value, (np.float64, np.float32)):
+            return float(value)
+        return value
+    
+def get_lrd_strain(lrd, form, debugging = False, **kwargs):
     """
     Creates non-linear LRD stiffness curve equations, and takes tension input to return strain or extension. 
     Called by lrd class, qs_offset, one_sec_init and two_sec_init_functions.
@@ -121,7 +128,7 @@ def get_lrd_strain(lrd, form, **kwargs):
             lrd_x = ((ht) * lrd.l / (at)) * (1 + strain) 
             lrd_z = ((vt - 0.5 * lrd.l * lrd.w) * lrd.l / (at)) * (1 + strain)
             
-            #Adjust axial tension terms to include self-weight of the LRD, i.e. vt = vt - 1/2 of self weight
+            # Adjust axial tension terms to include self-weight of the LRD, i.e. vt = vt - 1/2 of self weight
             lrd_x = lrd_x.subs({at: at_lrd_midpoint}) 
             lrd_z = lrd_z.subs({at: at_lrd_midpoint})
         
@@ -129,19 +136,18 @@ def get_lrd_strain(lrd, form, **kwargs):
         
     elif lrd.lrd_type == 'do':
         
-        theta = atan_func(vt / ht) if form=='sym' else np.radians(lrd.do_theta) # if for mooring line module, theta gets calculated from relationship between vert and horz force
-        
-        theta = pi_const / 2 - theta # convert to angle w.r.t. vertical rather than horz.
+        if debugging: print(math.degrees(lrd.do_theta))
+        theta = atan_func(ht / vt) if form == 'sym' else np.radians(lrd.do_theta) # Theta is w.r.t. the vertical!!!
 
-        # print('Mooring line angle')
-        # print(math.degrees(theta))
+        if debugging: print('Mooring line angle')
+        if debugging: print(math.degrees(theta))
 
         # Get horizontal and vertical components of mooring line force theta (Fx and Fy)
         Fx = at * sin_func(theta)
         Fy = at * cos_func(theta)
 
-        # print('at, Fx, F')
-        # print(at), print(Fx), print(Fy)
+        if debugging: print('at, Fx, F')
+        if debugging: print(at), print(Fx), print(Fy)
         
         r = sqrt_func(lrd.do_v ** 2 + lrd.do_h ** 2) # distance between lever arms
         s = sqrt_func( ((lrd.do_l - lrd.do_v) / 2 - lrd.do_hba / 2 ) ** 2 + (lrd.do_h ** 2 / 4 ) ) # distance between lower lever arm and ballast CoG
@@ -150,34 +156,36 @@ def get_lrd_strain(lrd, form, **kwargs):
 
         cos_beta_term = - lrd.do_fb * r * sin_func(phi) / 2 + lrd.do_fg * r * sin_func(phi) - lrd.do_fg * s * cos_func(chi) + Fx * r * cos_func(phi) - Fy * r * sin_func(phi)
         sin_beta_term =   lrd.do_fb * r * cos_func(phi) / 2 - lrd.do_fg * r * cos_func(phi) - lrd.do_fg * s * sin_func(chi) + Fx * r * sin_func(phi) + Fy * r * cos_func(phi)
- 
-        # print('s and r lengths')
-        # print(s),print(r)
 
-        # print('phi and chi angles')
-        # print(math.degrees(phi)), print(math.degrees(chi))
+        if debugging: print('s and r lengths')
+        if debugging: print(s),print(r)
+
+        if debugging: print('phi and chi angles')
+        if debugging: print(math.degrees(phi)), print(math.degrees(chi))
 
         beta = atan_func(sin_beta_term / cos_beta_term ) + pi_const/2 # Angle of LRD
-        # print('LRD angle')
-        # print(math.degrees(beta))
+        if debugging: print('LRD angle')
+        if debugging: print(math.degrees(beta))
 
         e0 = - r * cos_func(theta - phi) # initial in-line length between hinges (no-tension)
         e  = - r * cos_func(beta + theta - phi) # in-line length between hinges under tension
         ex = r * sin_func(beta - phi) # horz. component of distance between hinges
-        ez = r * cos_func(beta - phi) # vert. component of distance betwween hinges
-
+        ez = - r * cos_func(beta - phi) # vert. component of distance betwween hinges (added minus sign such that initial vert extension is negative)
         delta_l = e - e0  # extension
-        # print('LRD extension')
-        # print(delta_l)
-               
+
+        if debugging: print('Initial extension')
+        if debugging: print(e0)
+        if debugging: print('Final extended length between hinges')
+        if debugging: print(e)
+        if debugging: print('LRD extension')
+        if debugging: print(delta_l)
+        if debugging: print('Horz and vert components of extension')
+        if debugging: print(ex), print(ez)
+        
         if form=='sym': # Currently same logic as init form... does this need changing?
-            # lrd_x = (ht * delta_l / at) # this assumes length of lrd = delta_l, am I OK with this?
-            # lrd_z = (vt * delta_l / at)  
             lrd_x = ex
             lrd_z = ez
             return lrd_x, lrd_z, beta
                 
         else: 
             return delta_l
-        
-

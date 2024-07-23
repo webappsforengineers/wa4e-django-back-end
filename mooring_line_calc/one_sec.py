@@ -28,7 +28,6 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
     Difference between _offset and _init  eqns are the lrd terms, which are fully numeric for _init, and partly symbolic for _offset
     
     '''
-    
     # Set symbolic variables
     xf_sym, zf_sym, vt_sym, ht_sym, at_sym, s_sym, l_sym, ea_sym, w_sym = sp.symbols('xf zf vt ht at s l ea w')
     
@@ -62,7 +61,7 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
             for sol in ht_sols: 
                 if sol.is_real and sol.is_positive:
                     ht = float(sol)
-                           
+
         # If taut, solve numerically for ht & l 
         else:
             print('________ Solving taut no LRD ____________________________' if verbose else '',  end='\n')
@@ -134,17 +133,20 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
             
             if debugging:
             # Plot the function to understand its behavior 
-                ht_values = np.linspace(10, at, 4000)  
-                zf_values = [zf_eq_fsolve(ht) for ht in ht_values]
+                ht_values = np.linspace(10, at, 4000)
+                zf_values = []
+                for ht in ht_values:
+                    zf_values.append(zf_eq_fsolve(ht))
+                    print(ht)
                 plt.plot(ht_values, zf_values)
                 plt.xlabel('ht')
                 plt.ylabel('zf_eq(ht)')
                 plt.title('zf_eq(ht) vs. ht')
                 plt.grid(True)
                 plt.show()
-            
-            ht = opt.ridder(zf_eq_ht_only_func, 10, at) # lower bound to 10 N so no division by zero
-         
+
+            ht = opt.ridder(zf_eq_ht_only_func, 10, 0.99*at) # lower bound to 10 N & 0.99*at to avoid division by zero
+        
         # If taut, l is in both zf and xf, so solve 2 eqns with 2 unknowns. But can have very good initial guess
         else:
             print('________ Solving taut with LRD _______________________' if verbose else '', end='\n')
@@ -174,15 +176,22 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
             if not seabed_contact:
                 print('l =', reqd_length) 
 
-    # Get numerical values of lrd extension
-    lrd_x_val = float(lrd_x.subs({ht_sym: ht,  vt_sym: vt})) if lrd else 0
-    lrd_z_val = float(lrd_z.subs({ht_sym: ht,  vt_sym: vt})) if lrd else 0
-    if lrd and lrd.lrd_type == 'do': lrd_alpha_val_rad = float(lrd_alpha.subs({ht_sym: ht,  vt_sym: vt}))
-    lrd_alpha_val = math.degrees(lrd_alpha_val_rad) if lrd and lrd.lrd_type == 'do' else None
-
-    lrd_extension = np.sqrt(lrd_x_val ** 2 + lrd_z_val ** 2) - lrd.l if lrd else None
-    if lrd: print('LRD init extension =', lrd_extension)
-    if lrd and lrd.lrd_type == 'do': print('LRD init angle =', lrd_alpha_val)  # Angle is counter-clockwise from vertical
+        # Get numerical values of lrd extension to pass on to the plotting functs (ERROR IN THE NAMING - ALPHA is BETA in the lrd func)
+        lrd_x_val = float(lrd_x.subs({ht_sym: ht,  vt_sym: vt}))
+        lrd_z_val = float(lrd_z.subs({ht_sym: ht,  vt_sym: vt}))            
+        at_calculated = np.sqrt(vt ** 2 + ht ** 2)
+        ml_angle_calculated = np.degrees(np.arctan(vt / ht))
+        if lrd.lrd_type == 'tfi': 
+            lrd_extension = np.sqrt(lrd_x_val ** 2 + lrd_z_val ** 2) - lrd.l
+        elif lrd.lrd_type == 'do':
+            lrd.do_theta = ml_angle_calculated # in deg
+            lrd_alpha_val_rad = float(lrd_alpha.subs({ht_sym: ht,  vt_sym: vt}))
+            lrd_alpha_val = math.degrees(lrd_alpha_val_rad)
+            lrd.do_alpha = lrd_alpha_val_rad # Set the angle of the LRD, for the profile plotting, in rad
+            lrd_extension = get_lrd_strain(lrd, 'num', at = at_calculated) 
+    
+    # Assign lrd length of 0 if no lrd
+    if not lrd: lrd_x_val, lrd_z_val = 0, 0
 
 #################### PART 2 of function : fill in ht and vt, and solve l for catenary ####################
     
@@ -198,6 +207,11 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
         # Print the l solution
         if verbose:
             print('l =', reqd_length) if seabed_contact else print() 
+        # Calculate length on seabed
+        seabed_length = reqd_length - vt / w
+        # If the length on seabed is negative, raise an error
+        if seabed_length < 0:
+            raise ValueError('The length of chain on the seabed is negative. Please adjust the inputs.')
 
     # Now plug the reqd l into the numeric (ht and vt num) profile equations
     xs1_eq_init = xs1_eq.subs({ht_sym: ht,  vt_sym: vt, l_sym:reqd_length})
@@ -227,11 +241,16 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
     min_s1, max_s1   = 0, reqd_length
     DENSITY = 150
     s1_values = np.linspace(min_s1, max_s1, DENSITY)
-      
+
     # Calculate the corresponding x_s and z_s values
     xs_values_sec1 = [xs1_eq_init.subs({s_sym: s_val}).evalf() for s_val in s1_values]
     zs_values_sec1 = [zs1_eq_init.subs({s_sym: s_val}).evalf() for s_val in s1_values]
     
+    
+    xs_values_sec2 = None
+    zs_values_sec2 = None
+               
+
     xs_values_sec2 = None
     zs_values_sec2 = None
                
@@ -249,9 +268,22 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
     if zs_values_lrd:
         zs_values_lrd = [float(z) for z in zs_values_lrd]
 
-    # Plot the data    
-    # fig = plot_profile('one_sec', lrd, xf, zf, xs_values_sec1, zs_values_sec1, sec2_xs=None, sec2_zs=None, lrd_xs=xs_values_lrd, lrd_zs=zs_values_lrd)
+    # # Plot the mooring line profile    
+    # fig = plot_profile('one_sec', 'static', lrd, xf, zf, ht, vt, xs_values_sec1, zs_values_sec1, sec2_xs=None, sec2_zs=None, lrd_xs=xs_values_lrd, lrd_zs=zs_values_lrd)
     # fig.show()
+
+    # # Add the LRD drawings and stiffness curve if LRD is present
+    # if lrd and lrd.lrd_type == 'do':
+    #     fig2 = lrd.draw_rough_do('static', lrd_extension)
+    #     fig2.show()
+    #     fig3 = lrd.plot_stiffness_curve(analysis_type = 'static', current_tension = at_calculated, current_ext_or_str = lrd_extension)
+    #     fig3.show()
+
+    # if lrd and lrd.lrd_type == 'tfi':
+    #     fig2 = lrd.draw_tfi(analysis_type = 'static', extension = lrd_extension)
+    #     fig2.show()
+    #     fig3 = lrd.plot_stiffness_curve(analysis_type = 'static', current_tension = at_calculated, current_ext_or_str = lrd_extension / lrd.tfi_l)
+    #     fig3.show()
 
     init_package = {'xf_eq':  xf_eq_offset,
                     'zf_eq':  zf_eq_offset,
@@ -261,6 +293,8 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
                     'zs2_eq':  None,
                     'sec1_l':  reqd_length,
                     'sec2_l':  None,
+                    'sec1_w':  w,
+                    'sec2_w':  None,
                     'lrd_x' :  lrd_x if lrd else None, 
                     'lrd_z' :  lrd_z if lrd else None,
                     'lrd_alpha' : lrd_alpha if lrd and lrd.lrd_type == 'do' else None,

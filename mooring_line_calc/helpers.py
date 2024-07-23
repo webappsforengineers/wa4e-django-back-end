@@ -79,6 +79,7 @@ def get_fairlead_equations(seabed_contact, numorsim, w_num = None, ea_num = None
     else:
         return xf, zf
 
+
 def get_profile_equations(seabed_contact, numorsim, w_num = None, ea_num = None, l_num = None):
     '''
     Returns 2D profile equations for homogeneous catenary line of linear stiffness, as described in Jonkman 2009. 
@@ -111,13 +112,13 @@ def get_profile_equations(seabed_contact, numorsim, w_num = None, ea_num = None,
     if seabed_contact:
         xs = sp.Piecewise((s, (s <= lb)), # nodes on seabed
                           (lb + (ht/w) * log_term4 + (ht * s) / ea,
-                           sp.And(lb < s, s <= l)) # nodes between liftoff and top   
-                          )          
+                        sp.And(lb < s, s <= l)) # nodes between liftoff and top   
+                        )          
         
         zs = sp.Piecewise((0, (s <= lb)), # nodes on seabed
                           ((ht / w) * (sqrt_term4 - 1) + (w * (s - lb) ** 2) / (2 * ea),
-                           sp.And(lb < s, s <= l)) # nodes between liftoff and top 
-                             )
+                        sp.And(lb < s, s <= l)) # nodes between liftoff and top 
+                        )
     else: 
         xs = (ht / w) * (log_term3 - log_term) + ht * s / ea             
         zs = (ht / w) * (sqrt_term3 - sqrt_term) + (1 / ea) * (vt * s  + 0.5 * w * s ** 2)
@@ -125,7 +126,7 @@ def get_profile_equations(seabed_contact, numorsim, w_num = None, ea_num = None,
         va = vt - w * l
         xs = xs.subs({vt: va})
         zs = zs.subs({vt: va})
-             
+        
     if numorsim == 'num':    
         xs_num = xs.subs({w: w_num, ea: ea_num})
         zs_num = zs.subs({w: w_num, ea: ea_num})

@@ -70,7 +70,6 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
         # # Print the rounded expressions
         # print('xs2_eq =', sp.pretty(xs2_eq_rounded, use_unicode=True, wrap_line=True, num_columns=100))
         # print('zs2_eq =', sp.pretty(zs2_eq_rounded, use_unicode=True, wrap_line=True, num_columns=100))
-                       
         # Get rid of one of the force terms (vt in this case) by substituting vt for sqrt(at^2 - ht^2)
         xf_eq_ht_only = xf_eq.subs(vt_sym, sp.sqrt(at**2 - ht_sym**2))
         zf_eq_ht_only = zf_eq.subs(vt_sym, sp.sqrt(at**2 - ht_sym**2))
@@ -100,8 +99,8 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
                 plt.grid(True)
                 plt.show()
             
-            ht = opt.ridder(zf_eq_ht_only_func, 10, at) # lower bound to 10 N so no division by zero
-                           
+            ht = opt.ridder(zf_eq_ht_only_func, 10,  0.99*at) # lower bound to 10 N so no division by zero
+
         # If taut, solve numerically for ht & l 
         else:
             print('________ Solving taut no LRD ____________________________' if verbose else '',  end='\n')
@@ -188,8 +187,8 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
                 plt.grid(True)
                 plt.show()
             
-            ht = opt.ridder(zf_eq_ht_only_func, 10, at) # lower bound to 10 N so no division by zero
-         
+            ht = opt.ridder(zf_eq_ht_only_func, 10, 0.99*at) # lower bound to 10 N so no division by zero
+
         # If taut, l is in both zf and xf, so solve 2 eqns with 2 unknowns. But can have very good initial guess
         else:
             print('________ Solving taut with LRD _______________________' if verbose else '', end='\n')
@@ -219,15 +218,19 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
             if not seabed_contact:
                 print('l =', reqd_length) 
 
-        # Get numerical values of lrd extension
+        # Get numerical values of lrd extension to pass on to the plotting functs (ERROR IN THE NAMING - ALPHA is BETA in the lrd func)
         lrd_x_val = float(lrd_x.subs({ht_sym: ht,  vt_sym: vt}))
-        lrd_z_val = float(lrd_z.subs({ht_sym: ht,  vt_sym: vt}))
-        if lrd and lrd.lrd_type == 'do': lrd_alpha_val_rad = float(lrd_alpha.subs({ht_sym: ht,  vt_sym: vt}))
-        lrd_alpha_val = math.degrees(lrd_alpha_val_rad) if lrd and lrd.lrd_type == 'do' else None # angle is counter-clockwise from vertical
-
-        lrd_extension = np.sqrt(lrd_x_val ** 2 + lrd_z_val ** 2) - lrd.l 
-        print('LRD init extension =', lrd_extension)
-        if lrd.lrd_type == 'do': print('LRD init angle =', lrd_alpha_val)
+        lrd_z_val = float(lrd_z.subs({ht_sym: ht,  vt_sym: vt}))            
+        at_calculated = np.sqrt(vt ** 2 + ht ** 2)
+        ml_angle_calculated = np.degrees(np.arctan(vt / ht))
+        if lrd.lrd_type == 'tfi': 
+            lrd_extension = np.sqrt(lrd_x_val ** 2 + lrd_z_val ** 2) - lrd.l
+        elif lrd.lrd_type == 'do':
+            lrd.do_theta = ml_angle_calculated
+            lrd_alpha_val_rad = float(lrd_alpha.subs({ht_sym: ht,  vt_sym: vt}))
+            lrd_alpha_val = math.degrees(lrd_alpha_val_rad)
+            lrd.do_alpha = lrd_alpha_val_rad # Set the angle of the LRD, for the profile plotting
+            lrd_extension = get_lrd_strain(lrd, 'num', at = at_calculated) 
             
 #################### PART 2 of function : fill in ht and vt, and solve l for catenary ####################
     
@@ -243,6 +246,11 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
         # Print the l solution
         if verbose:
             print('l =', reqd_length) if seabed_contact else print() 
+        # Calculate length on seabed
+        seabed_length = reqd_length - (vt - w2 * l2) / w1
+        # If the length on seabed is negative, raise an error
+        if seabed_length < 0:
+            raise ValueError('The length of chain on the seabed is negative. Please adjust the inputs.')
 
     # Now plug the reqd l into the numeric (ht and vt num) profile equations
 
@@ -317,9 +325,24 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
     if zs_values_lrd:
         zs_values_lrd = [float(z) for z in zs_values_lrd]
 
-    # Plot the data    
-    # fig = plot_profile('two_sec', lrd, xf, zf, sec1_xs = xs_values_sec1, sec1_zs = zs_values_sec1, sec2_xs=xs_values_sec2, sec2_zs=zs_values_sec2, lrd_xs=xs_values_lrd, lrd_zs=zs_values_lrd)
+    # # Plot the mooring line profile    
+    # fig = plot_profile('two_sec', 'static', lrd, xf, zf, ht, vt, xs_values_sec1, zs_values_sec1, sec2_xs=xs_values_sec2, sec2_zs=zs_values_sec2, lrd_xs=xs_values_lrd, lrd_zs=zs_values_lrd)
     # fig.show()
+
+    # # Add the LRD drawings and stiffness curve if LRD is present
+    # mooring_angle = np.degrees(np.arctan(vt / ht))
+    # if lrd and lrd.lrd_type == 'do':
+    #     fig2 = lrd.draw_rough_do('static', lrd_extension)
+    #     fig2.show()
+    #     fig3 = lrd.plot_stiffness_curve(analysis_type = 'static', current_tension = at_calculated, current_ext_or_str = lrd_extension)
+    #     fig3.show()
+
+    # if lrd and lrd.lrd_type == 'tfi':
+    #     fig2 = lrd.draw_tfi(analysis_type = 'static', extension = lrd_extension)
+    #     fig2.show()
+    #     fig3 = lrd.plot_stiffness_curve(analysis_type = 'static', current_tension = at_calculated, current_ext_or_str = lrd_extension / lrd.tfi_l)
+    #     fig3.show()
+
 
     init_package = {    'xf_eq':  xf_eq_offset,
                         'zf_eq':  zf_eq_offset,
@@ -329,6 +352,8 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
                         'zs2_eq':  zs2_eq_offset,
                         'sec1_l':  reqd_length,
                         'sec2_l':  l2,
+                        'sec1_w':  w1,
+                        'sec2_w':  w2,
                         'lrd_x' :  lrd_x if lrd else None, 
                         'lrd_z' :  lrd_z if lrd else None,
                         'lrd_alpha' : lrd_alpha if lrd and lrd.lrd_type == 'do' else None,

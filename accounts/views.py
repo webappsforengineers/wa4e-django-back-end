@@ -19,7 +19,7 @@ from mooring_line_calc.one_sec import one_sec_init
 from mooring_line_calc.two_sec import two_sec_init
 from mooring_line_calc.offset_funct import qs_offset
 from wlgr_calc.model_functions import pwp_acc, update_properties, update_applied_loads, findOCR, consolidate, check_failure
-
+from sympy import N
 import math
 
 # User accounts
@@ -251,7 +251,7 @@ def initialise_mooring(request):
         xf = request.data.get('xf')
     else:
         taut_angle = request.data.get('taut_angle')
-        xf = zf / math.tan(math.radians(taut_angle))
+        xf = zf / math.tan(math.radians(90 - taut_angle))
         
     preten = request.data.get('preten') * 1e3
 
@@ -294,7 +294,7 @@ def initialise_mooring(request):
         do_h = request.data.get('do_h')
         do_v = request.data.get('do_v')
         do_rho = request.data.get('do_rho')
-        do_theta = taut_angle if not seabed_contact else 45
+        do_theta = taut_angle if not seabed_contact else None
         lrd = LrdDesign("do", do_d=do_d, do_l=do_l, do_h=do_h, do_v=do_v, do_theta=do_theta, do_rho=do_rho)
         do_hba = lrd.do_hba
         do_o = lrd.do_o
@@ -358,38 +358,84 @@ def initialise_mooring(request):
         at_values = np.linspace(0.1, lrd.do_fg * 4, 100)
         ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
         
+        # Variables for the mooring line profile
+        # Plot the outline of the lrd.
+        # Find the center coordinates of the LRD, i.e. the mid point between the hinges
+        lrd_center_x = (init['xs_values_lrd'][0] + init['xs_values_lrd'][-1]) / 2
+        lrd_center_z = (init['zs_values_lrd'][0] + init['zs_values_lrd'][-1]) / 2
+        # Plot the outline of the lrd, which is a rectangle with a center at  coordinates, of dimensions lrd.do_l and lrd.do_h
+        # Lrd angle is with respect to vertical (counter clockwise is +ve) is lrd.do_alpha
+        half_width = lrd.do_l / 2 # Width and height are the wrong way around here, but it doesn't matter as long as they are consistent
+        half_height = lrd.do_d / 2
+
+        # Assume alpha is lrd.do_alpha given in radians with respect to the vertical axis
+        alpha = float(N(lrd.do_alpha))
+
+        corners = [
+            (np.cos(alpha) * half_height - np.sin(alpha) * half_width, np.sin(alpha) * half_height + np.cos(alpha) * half_width), # Top left
+            (-np.cos(alpha) * half_height - np.sin(alpha) * half_width, -np.sin(alpha) * half_height + np.cos(alpha) * half_width), # Bottom left
+            (-np.cos(alpha) * half_height + np.sin(alpha) * half_width, -np.sin(alpha) * half_height - np.cos(alpha) * half_width), # Bottom right
+            (np.cos(alpha) * half_height + np.sin(alpha) * half_width, np.sin(alpha) * half_height - np.cos(alpha) * half_width)  # Top right
+        ]
+
+        # Adjust these based on the center point
+        corner_xs = [lrd_center_x + cx for cx, cz in corners]
+        corner_zs = [lrd_center_z + cz for cx, cz in corners]
+
+        # Ensure the rectangle closes by repeating the first corner
+        corner_xs.append(corner_xs[0])
+        corner_zs.append(corner_zs[0])
+        
+        # Additional variables for smaller rectangle
+        reduced_width = half_width - lrd.do_hba
+
+        # Calculate new corners for the smaller rectangle
+        smaller_corners = [
+            corners[0], # Bottom left
+            corners[1], # New top right
+            (-np.cos(alpha) * half_height + np.sin(alpha) * reduced_width, -np.sin(alpha) * half_height - np.cos(alpha) * reduced_width), # New top left
+            (np.cos(alpha) * half_height + np.sin(alpha) * reduced_width, np.sin(alpha) * half_height - np.cos(alpha) * reduced_width),  # Bottom-right, shared
+        ]
+
+        # Adjust these based on the center point
+        smaller_corner_xs = [lrd_center_x + cx for cx, cz in smaller_corners]
+        smaller_corner_zs = [lrd_center_z + cz for cx, cz in smaller_corners]
+
+        # Ensure the rectangle closes by repeating the first corner
+        smaller_corner_xs.append(smaller_corner_xs[0])
+        smaller_corner_zs.append(smaller_corner_zs[0])
+        
+        # Now add a little line (of length lrd.do_d) going from the lower hinge upwards at an angle of lrd.do_theta
+        mooring_angle = np.arctan(init['vt0'] / init['ht0'])
+        lower_hinge_x, lower_hinge_z = init['xs_values_lrd'][-1], init['zs_values_lrd'][-1]
+        line_end_x = lower_hinge_x + lrd.do_d * np.cos(mooring_angle)
+        line_end_z = lower_hinge_z + lrd.do_d * np.sin(mooring_angle)
+        line_from_hinge_x = [lower_hinge_x, line_end_x]
+        line_from_hinge_y = [lower_hinge_z, line_end_z]
+        
     # Convert numpy floats to Python floats
     at_values = [float(value) for value in at_values]
     ext_or_str_values = [float(value) for value in ext_or_str_values]
 
     
     return Response({
-                    # 'xf_eq': init['xf_eq'],
-                    #  'zf_eq': init['zf_eq'],
-                    #  'xs1_eq': init['xs1_eq'],
-                    #  'zs1_eq': init['zs1_eq'],
-                    #  'xs2_eq': init['xs2_eq'],
-                    #  'zs2_eq': init['zs2_eq'],
-                     'sec1_l': init['sec1_l'],
-                    #  'sec2_l': init['sec2_l'],
-                    #  'lrd_x': init['lrd_x'],
-                    #  'lrd_z': init['lrd_z'],
-                    #  'lrd_alpha': init['lrd_alpha'],
-                     'vt0':init['vt0'], 
-                     'ht0': init['ht0'],
-                    #  'xf0': init['xf0'],
-                    #  'zf0': init['zf0'],
-                    #  'lrd': init['lrd'],
-                    #  's1_values': init['s1_values'],
-                    #  's2_values': init['s2_values'],
-                    #  'moortype': init['moortype'],
-                    #  'name': init['name'],
+
+                    'sec1_l': init['sec1_l'],
+                    'vt0':init['vt0'], 
+                    'ht0': init['ht0'],
+                    
                     'xs_values_sec1': init['xs_values_sec1'],
                     'zs_values_sec1': init['zs_values_sec1'],
                     'xs_values_lrd': init['xs_values_lrd'],
                     'zs_values_lrd': init['zs_values_lrd'],
                     'xs_values_sec2': init['xs_values_sec2'],
                     'zs_values_sec2': init['zs_values_sec2'],
+                    'corner_xs': corner_xs,
+                    'corner_zs': corner_zs,
+                    'smaller_corner_xs': smaller_corner_xs,
+                    'smaller_corner_zs': smaller_corner_zs,
+                    'line_from_hinge_x': line_from_hinge_x,
+                    'line_from_hinge_y': line_from_hinge_y, 
                     
                     'at_values': at_values,
                     'ext_or_str_values': ext_or_str_values,
