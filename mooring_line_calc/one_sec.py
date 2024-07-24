@@ -253,6 +253,9 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
 
     xs_values_sec2 = None
     zs_values_sec2 = None
+    
+    if not lrd:
+        at_calculated, lrd_extension = None, None
                
     if not lrd:
         xs_values_lrd, zs_values_lrd = None, None
@@ -313,6 +316,8 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
                     'zs_values_lrd': zs_values_lrd,
                     'xs_values_sec2': xs_values_sec2,
                     'zs_values_sec2': zs_values_sec2,
+                    'at_calculated': at_calculated,
+                    'lrd_extension': lrd_extension,
                     }
     print()
     

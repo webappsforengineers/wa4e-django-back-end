@@ -346,6 +346,13 @@ def initialise_mooring(request):
     if lrd_type == "1":
         at_values = []
         ext_or_str_values = []
+        corner_xs = []
+        corner_zs = []
+        smaller_corner_xs = []
+        smaller_corner_zs = []
+        line_from_hinge_x = []
+        line_from_hinge_y = []
+        
     # Generate 100 evenly spaced axial tension values between T_min and T_max
     elif lrd_type == "2":   
         tfi_rt = tfi_rt_kN * 1e3
@@ -354,6 +361,13 @@ def initialise_mooring(request):
         # Get modelled data from stiffness equation
         ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
         print('ext_or_str_values:', ext_or_str_values)
+        corner_xs = []
+        corner_zs = []
+        smaller_corner_xs = []
+        smaller_corner_zs = []
+        line_from_hinge_x = []
+        line_from_hinge_y = []
+        
     elif lrd_type == "3":
         at_values = np.linspace(0.1, lrd.do_fg * 4, 100)
         ext_or_str_values = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values]
@@ -416,6 +430,8 @@ def initialise_mooring(request):
     # Convert numpy floats to Python floats
     at_values = [float(value) for value in at_values]
     ext_or_str_values = [float(value) for value in ext_or_str_values]
+    
+    print(init['lrd_extension'])
 
     
     return Response({
@@ -439,6 +455,8 @@ def initialise_mooring(request):
                     
                     'at_values': at_values,
                     'ext_or_str_values': ext_or_str_values,
+                    'at_calculated': init['at_calculated'],
+                    'lrd_extension': init['lrd_extension'],
                     
                     'tfi_l': tfi_l,
                     'tfi_d': tfi_d,

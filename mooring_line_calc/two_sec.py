@@ -310,6 +310,9 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
     zs_values_sec2 = [zs2_eq_init.subs({s_sym: s_val}).evalf() + zf1_val for s_val in s2_values ]
 
     if not lrd:
+        at_calculated, lrd_extension = None, None
+        
+    if not lrd:
         xs_values_lrd, zs_values_lrd = None, None
     else:        
         xs_values_lrd =  [xf2_val + xf1_val, xf2_val + xf1_val + lrd_x_val]
@@ -372,6 +375,8 @@ def two_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea1 
                         'zs_values_lrd': zs_values_lrd,
                         'xs_values_sec2': xs_values_sec2,
                         'zs_values_sec2': zs_values_sec2,
+                        'at_calculated': at_calculated,
+                        'lrd_extension': lrd_extension,
                         }
       
     print()
