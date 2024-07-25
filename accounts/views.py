@@ -333,13 +333,6 @@ def initialise_mooring(request):
         init = one_sec_init(seabed_contact=seabed_contact, lrd=lrd, at=preten, xf=xf, zf=zf, ea=ea1, w=w1)
     else:
         init = two_sec_init(seabed_contact=seabed_contact, lrd=lrd, at=preten, xf=xf, zf=zf, ea1=ea1, w1=w1, ea2=ea2, w2=w2, l2=l2)
-
-    # print('Vertical tension = ', init['vt0'] / 1e3 , 'kN')
-    # print('Horizontal tension = ', init['ht0'] / 1e3 , 'kN')
-    # print('Required length of section 1 to achieve pre-tension = ', init['sec1_l'] , 'm')
-    
-    # print(type(init))
-    # print(init)
     
     # variables for LRD stiffness curve
     

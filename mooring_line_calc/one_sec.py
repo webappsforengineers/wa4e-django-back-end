@@ -273,52 +273,53 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
         
         
     # Calculate variables for DO geometry
-    if lrd.lrd_type == 'do':
-        arrow_length = 8
+    if lrd:
+        if lrd.lrd_type == 'do':
+            arrow_length = 8
 
-        # Create rotation matrix
-        alpha = lrd.do_alpha
-        theta = lrd.do_theta
+            # Create rotation matrix
+            alpha = lrd.do_alpha
+            theta = lrd.do_theta
+                
+            rotation_matrix = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
+            # Calculate hinge points before rotation
+            top_hinge    = np.array([lrd.do_d / 2 + lrd.do_h / 2, lrd.do_l / 2 + lrd.do_v / 2])
+            bottom_hinge = np.array([lrd.do_d / 2 - lrd.do_h / 2, lrd.do_l / 2 - lrd.do_v / 2])
             
-        rotation_matrix = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
-        # Calculate hinge points before rotation
-        top_hinge    = np.array([lrd.do_d / 2 + lrd.do_h / 2, lrd.do_l / 2 + lrd.do_v / 2])
-        bottom_hinge = np.array([lrd.do_d / 2 - lrd.do_h / 2, lrd.do_l / 2 - lrd.do_v / 2])
-        
-        # Calculate the new origin
-        new_origin = (top_hinge + bottom_hinge) / 2
-        
-        # Create the rectangles around the new origin
-        full_rectangle = np.array([
-            [0 - new_origin[0], 0 - new_origin[1]],
-            [lrd.do_d - new_origin[0], 0 - new_origin[1]],
-            [lrd.do_d - new_origin[0], lrd.do_l - new_origin[1]],
-            [0 - new_origin[0], lrd.do_l - new_origin[1]],
-            [0 - new_origin[0], 0 - new_origin[1]]
-        ]).T
-        
-        bottom_rectangle = np.array([
-            [0 - new_origin[0], 0 - new_origin[1]],
-            [lrd.do_d - new_origin[0], 0 - new_origin[1]],
-            [lrd.do_d - new_origin[0], (lrd.do_hba) - new_origin[1]],
-            [0 - new_origin[0], (lrd.do_hba) - new_origin[1]],
-            [0 - new_origin[0], 0 - new_origin[1]]
-        ]).T
-        
-        # Rotate rectangles and hinge points
-        full_rectangle_rotated = np.dot(rotation_matrix, full_rectangle)
-        bottom_rectangle_rotated = np.dot(rotation_matrix, bottom_rectangle)
-        top_hinge_rotated = np.dot(rotation_matrix, top_hinge - new_origin)
-        bottom_hinge_rotated = np.dot(rotation_matrix, bottom_hinge - new_origin)
-        
-        # Angle for arrows at hinge points (based on rotated hinge locations)
-        angle = np.radians(theta)
-        
-        top_hinge_arrow_endpoint_x = top_hinge_rotated[0] - arrow_length * np.cos(angle)
-        top_hinge_arrow_endpoint_y = top_hinge_rotated[1] - arrow_length * np.sin(angle)
-        bottom_hinge_arrow_endpoint_x = bottom_hinge_rotated[0] + arrow_length * np.cos(angle)
-        bottom_hinge_arrow_endpoint_y = bottom_hinge_rotated[1] + arrow_length * np.sin(angle)
-        
+            # Calculate the new origin
+            new_origin = (top_hinge + bottom_hinge) / 2
+            
+            # Create the rectangles around the new origin
+            full_rectangle = np.array([
+                [0 - new_origin[0], 0 - new_origin[1]],
+                [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+                [lrd.do_d - new_origin[0], lrd.do_l - new_origin[1]],
+                [0 - new_origin[0], lrd.do_l - new_origin[1]],
+                [0 - new_origin[0], 0 - new_origin[1]]
+            ]).T
+            
+            bottom_rectangle = np.array([
+                [0 - new_origin[0], 0 - new_origin[1]],
+                [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+                [lrd.do_d - new_origin[0], (lrd.do_hba) - new_origin[1]],
+                [0 - new_origin[0], (lrd.do_hba) - new_origin[1]],
+                [0 - new_origin[0], 0 - new_origin[1]]
+            ]).T
+            
+            # Rotate rectangles and hinge points
+            full_rectangle_rotated = np.dot(rotation_matrix, full_rectangle)
+            bottom_rectangle_rotated = np.dot(rotation_matrix, bottom_rectangle)
+            top_hinge_rotated = np.dot(rotation_matrix, top_hinge - new_origin)
+            bottom_hinge_rotated = np.dot(rotation_matrix, bottom_hinge - new_origin)
+            
+            # Angle for arrows at hinge points (based on rotated hinge locations)
+            angle = np.radians(theta)
+            
+            top_hinge_arrow_endpoint_x = top_hinge_rotated[0] - arrow_length * np.cos(angle)
+            top_hinge_arrow_endpoint_y = top_hinge_rotated[1] - arrow_length * np.sin(angle)
+            bottom_hinge_arrow_endpoint_x = bottom_hinge_rotated[0] + arrow_length * np.cos(angle)
+            bottom_hinge_arrow_endpoint_y = bottom_hinge_rotated[1] + arrow_length * np.sin(angle)
+            
         
     if not lrd or lrd.lrd_type != 'do':
         full_rectangle_rotated = []
