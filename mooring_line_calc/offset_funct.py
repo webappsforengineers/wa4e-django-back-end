@@ -3,6 +3,7 @@ import sympy as sp
 # import plotly.graph_objects as go
 from scipy.optimize import anderson
 from scipy.optimize.nonlin import NoConvergence
+from mooring_line_calc.lrd_module import LrdDesign, get_lrd_strain
 # from mooring_line_calc.helpers import plot_profile, plot_tension_offset, animate
 
 def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True):
@@ -34,6 +35,7 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     all_bottom_rectangles_rotated = []
     all_top_hinges_rotated = []
     all_bottom_hinges_rotated = []
+    all_at_calculated = []
     
     # Generate displacement values
     displacement_values = displacement_values = np.linspace(0, max_offset, num= int(max_offset * resolution))
@@ -94,6 +96,9 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
         if lrd:lrd_x_val = float(lrd_x.subs(subs_dict))
         if lrd:lrd_z_val = float(lrd_z.subs(subs_dict))
         if lrd and lrd.lrd_type == 'do' : lrd_alpha_val_rad = lrd_alpha.subs(subs_dict) # Get the alpha value in radians
+        if lrd and lrd.lrd_type == 'do' : lrd.do_alpha = sp.N(lrd_alpha_val_rad) # Set the angle of the LRD, for the profile plotting
+        if lrd and lrd.lrd_type == 'do' : lrd.do_theta = ml_angle # Set the angle of the mooring line, for the stiffness curve plotting
+        
         
         if profile_plot:
         
@@ -131,7 +136,9 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
                 lrd_extension = np.sqrt(lrd_x_val**2 + lrd_z_val**2)
 
                 if lrd.lrd_type == 'do':
-                    ext_or_str =  lrd_extension
+                    ext_or_str = get_lrd_strain(lrd, 'num', at = tension) 
+                    print(f'ext_or_str {ext_or_str}')
+                    all_current_ext_or_str_values.append(ext_or_str)
                     lrd_alpha_val = np.degrees(float(lrd_alpha_val_rad))
                     
                     # Create rotation matrix
@@ -180,10 +187,10 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
                     extension = lrd_extension - lrd.l
                     current_length = lrd.l + extension
                     all_tfi_current_lengths.append(current_length)
-                
-                all_current_ext_or_str_values.append(ext_or_str)
-                
-        
+                    all_current_ext_or_str_values.append(ext_or_str)
+    
+    # convert tension values to kN 
+    tension_values = [element / 1000 for element in tension_values]
         
                     
     return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated
