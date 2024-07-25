@@ -352,6 +352,7 @@ def initialise_mooring(request):
         smaller_corner_zs = []
         line_from_hinge_x = []
         line_from_hinge_y = []
+        alpha = None
         
     # Generate 100 evenly spaced axial tension values between T_min and T_max
     elif lrd_type == "2":   
@@ -367,6 +368,7 @@ def initialise_mooring(request):
         smaller_corner_zs = []
         line_from_hinge_x = []
         line_from_hinge_y = []
+        alpha = None
         
     elif lrd_type == "3":
         at_values = np.linspace(0.1, lrd.do_fg * 4, 100)
@@ -469,6 +471,17 @@ def initialise_mooring(request):
                     'do_theta': do_theta,
                     'do_hba': do_hba,
                     'do_o': do_o,
+                    
+                    'full_rectangle_rotated': init['full_rectangle_rotated'],
+                    'bottom_rectangle_rotated': init['bottom_rectangle_rotated'],
+                    'top_hinge_rotated': init['top_hinge_rotated'],
+                    'bottom_hinge_rotated': init['bottom_hinge_rotated'],
+                    
+                    'top_hinge_arrow_endpoint_x': init['top_hinge_arrow_endpoint_x'],
+                    'top_hinge_arrow_endpoint_y': init['top_hinge_arrow_endpoint_y'],
+                    'bottom_hinge_arrow_endpoint_x': init['bottom_hinge_arrow_endpoint_x'],
+                    'bottom_hinge_arrow_endpoint_y': init['bottom_hinge_arrow_endpoint_y'],
+                    'alpha': alpha,
 
                      })
     

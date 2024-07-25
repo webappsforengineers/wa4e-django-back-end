@@ -270,23 +270,66 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
         xs_values_lrd = [float(x) for x in xs_values_lrd]
     if zs_values_lrd:
         zs_values_lrd = [float(z) for z in zs_values_lrd]
+        
+        
+    # Calculate variables for DO geometry
+    if lrd.lrd_type == 'do':
+        arrow_length = 8
 
-    # # Plot the mooring line profile    
-    # fig = plot_profile('one_sec', 'static', lrd, xf, zf, ht, vt, xs_values_sec1, zs_values_sec1, sec2_xs=None, sec2_zs=None, lrd_xs=xs_values_lrd, lrd_zs=zs_values_lrd)
-    # fig.show()
+        # Create rotation matrix
+        alpha = lrd.do_alpha
+        theta = lrd.do_theta
+            
+        rotation_matrix = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
+        # Calculate hinge points before rotation
+        top_hinge    = np.array([lrd.do_d / 2 + lrd.do_h / 2, lrd.do_l / 2 + lrd.do_v / 2])
+        bottom_hinge = np.array([lrd.do_d / 2 - lrd.do_h / 2, lrd.do_l / 2 - lrd.do_v / 2])
+        
+        # Calculate the new origin
+        new_origin = (top_hinge + bottom_hinge) / 2
+        
+        # Create the rectangles around the new origin
+        full_rectangle = np.array([
+            [0 - new_origin[0], 0 - new_origin[1]],
+            [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+            [lrd.do_d - new_origin[0], lrd.do_l - new_origin[1]],
+            [0 - new_origin[0], lrd.do_l - new_origin[1]],
+            [0 - new_origin[0], 0 - new_origin[1]]
+        ]).T
+        
+        bottom_rectangle = np.array([
+            [0 - new_origin[0], 0 - new_origin[1]],
+            [lrd.do_d - new_origin[0], 0 - new_origin[1]],
+            [lrd.do_d - new_origin[0], (lrd.do_hba) - new_origin[1]],
+            [0 - new_origin[0], (lrd.do_hba) - new_origin[1]],
+            [0 - new_origin[0], 0 - new_origin[1]]
+        ]).T
+        
+        # Rotate rectangles and hinge points
+        full_rectangle_rotated = np.dot(rotation_matrix, full_rectangle)
+        bottom_rectangle_rotated = np.dot(rotation_matrix, bottom_rectangle)
+        top_hinge_rotated = np.dot(rotation_matrix, top_hinge - new_origin)
+        bottom_hinge_rotated = np.dot(rotation_matrix, bottom_hinge - new_origin)
+        
+        # Angle for arrows at hinge points (based on rotated hinge locations)
+        angle = np.radians(theta)
+        
+        top_hinge_arrow_endpoint_x = top_hinge_rotated[0] - arrow_length * np.cos(angle)
+        top_hinge_arrow_endpoint_y = top_hinge_rotated[1] - arrow_length * np.sin(angle)
+        bottom_hinge_arrow_endpoint_x = bottom_hinge_rotated[0] + arrow_length * np.cos(angle)
+        bottom_hinge_arrow_endpoint_y = bottom_hinge_rotated[1] + arrow_length * np.sin(angle)
+        
+        
+    if not lrd or lrd.lrd_type != 'do':
+        full_rectangle_rotated = []
+        bottom_rectangle_rotated = []
+        top_hinge_rotated = []
+        bottom_hinge_rotated = []
+        top_hinge_arrow_endpoint_x = None
+        top_hinge_arrow_endpoint_y = None
+        bottom_hinge_arrow_endpoint_x = None
+        bottom_hinge_arrow_endpoint_y = None
 
-    # # Add the LRD drawings and stiffness curve if LRD is present
-    # if lrd and lrd.lrd_type == 'do':
-    #     fig2 = lrd.draw_rough_do('static', lrd_extension)
-    #     fig2.show()
-    #     fig3 = lrd.plot_stiffness_curve(analysis_type = 'static', current_tension = at_calculated, current_ext_or_str = lrd_extension)
-    #     fig3.show()
-
-    # if lrd and lrd.lrd_type == 'tfi':
-    #     fig2 = lrd.draw_tfi(analysis_type = 'static', extension = lrd_extension)
-    #     fig2.show()
-    #     fig3 = lrd.plot_stiffness_curve(analysis_type = 'static', current_tension = at_calculated, current_ext_or_str = lrd_extension / lrd.tfi_l)
-    #     fig3.show()
 
     init_package = {'xf_eq':  xf_eq_offset,
                     'zf_eq':  zf_eq_offset,
@@ -318,7 +361,17 @@ def one_sec_init(seabed_contact = True, at = 600000, xf = 796.73, zf = 136, ea =
                     'zs_values_sec2': zs_values_sec2,
                     'at_calculated': at_calculated,
                     'lrd_extension': lrd_extension,
+                    
+                    'full_rectangle_rotated': full_rectangle_rotated,
+                    'bottom_rectangle_rotated': bottom_rectangle_rotated,
+                    'top_hinge_rotated': top_hinge_rotated,
+                    'bottom_hinge_rotated': bottom_hinge_rotated,
+                    
+                    'top_hinge_arrow_endpoint_x': top_hinge_arrow_endpoint_x,
+                    'top_hinge_arrow_endpoint_y': top_hinge_arrow_endpoint_y,
+                    'bottom_hinge_arrow_endpoint_x': bottom_hinge_arrow_endpoint_x,
+                    'bottom_hinge_arrow_endpoint_y': bottom_hinge_arrow_endpoint_y,
+                    
                     }
-    print()
     
     return init_package
