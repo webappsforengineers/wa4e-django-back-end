@@ -426,6 +426,11 @@ def initialise_mooring(request):
     ext_or_str_values = [float(value) for value in ext_or_str_values]
     
     print(init['lrd_extension'])
+    
+    if init['at_calculated']:
+        at_calculated = init['at_calculated']/1000
+    else:
+        at_calculated = None
 
     
     return Response({
@@ -449,7 +454,7 @@ def initialise_mooring(request):
                     
                     'at_values': at_values,
                     'ext_or_str_values': ext_or_str_values,
-                    'at_calculated': init['at_calculated']/1000,
+                    'at_calculated': at_calculated,
                     'lrd_extension': init['lrd_extension'],
                     
                     'tfi_l': tfi_l,
