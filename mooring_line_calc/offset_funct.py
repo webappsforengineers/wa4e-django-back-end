@@ -1,5 +1,6 @@
 import numpy as np
 import sympy as sp
+from sympy import N
 # import plotly.graph_objects as go
 from scipy.optimize import anderson
 from scipy.optimize.nonlin import NoConvergence
@@ -29,6 +30,14 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     all_zs_values_sec2 = []
     all_xs_values_lrd = []
     all_zs_values_lrd = []
+    all_corner_xs = []
+    all_corner_zs = []
+    all_smaller_corner_xs = []
+    all_smaller_corner_zs = []
+    all_line_from_hinge_x = []
+    all_line_from_hinge_y = []
+    
+    
     all_tfi_current_lengths = []
     all_ml_angles = []
     all_full_rectangles_rotated = []
@@ -182,6 +191,68 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
                     angle = np.radians(90 - ml_angle)
                     
                     all_ml_angles.append(angle)
+                    
+                    # Variables for the mooring line profile
+                    # Plot the outline of the lrd.
+                    # Find the center coordinates of the LRD, i.e. the mid point between the hinges
+                    lrd_center_x = (xs_values_lrd[0] + xs_values_lrd[-1]) / 2
+                    lrd_center_z = (zs_values_lrd[0] + zs_values_lrd[-1]) / 2
+                    # Plot the outline of the lrd, which is a rectangle with a center at  coordinates, of dimensions lrd.do_l and lrd.do_h
+                    # Lrd angle is with respect to vertical (counter clockwise is +ve) is lrd.do_alpha
+                    half_width = lrd.do_l / 2 # Width and height are the wrong way around here, but it doesn't matter as long as they are consistent
+                    half_height = lrd.do_d / 2
+                    
+                    # Assume alpha is lrd.do_alpha given in radians with respect to the vertical axis
+                    alpha = float(N(lrd.do_alpha))
+
+                    corners = [
+                        (np.cos(alpha) * half_height - np.sin(alpha) * half_width, np.sin(alpha) * half_height + np.cos(alpha) * half_width), # Top left
+                        (-np.cos(alpha) * half_height - np.sin(alpha) * half_width, -np.sin(alpha) * half_height + np.cos(alpha) * half_width), # Bottom left
+                        (-np.cos(alpha) * half_height + np.sin(alpha) * half_width, -np.sin(alpha) * half_height - np.cos(alpha) * half_width), # Bottom right
+                        (np.cos(alpha) * half_height + np.sin(alpha) * half_width, np.sin(alpha) * half_height - np.cos(alpha) * half_width)  # Top right
+                    ]
+
+                    # Adjust these based on the center point
+                    corner_xs = [lrd_center_x + cx for cx, cz in corners]
+                    corner_zs = [lrd_center_z + cz for cx, cz in corners]
+
+                    # Ensure the rectangle closes by repeating the first corner
+                    corner_xs.append(corner_xs[0])
+                    corner_zs.append(corner_zs[0])
+                    
+                    # Additional variables for smaller rectangle
+                    reduced_width = half_width - lrd.do_hba
+
+                    # Calculate new corners for the smaller rectangle
+                    smaller_corners = [
+                        corners[0], # Bottom left
+                        corners[1], # New top right
+                        (-np.cos(alpha) * half_height + np.sin(alpha) * reduced_width, -np.sin(alpha) * half_height - np.cos(alpha) * reduced_width), # New top left
+                        (np.cos(alpha) * half_height + np.sin(alpha) * reduced_width, np.sin(alpha) * half_height - np.cos(alpha) * reduced_width),  # Bottom-right, shared
+                    ]
+
+                    # Adjust these based on the center point
+                    smaller_corner_xs = [lrd_center_x + cx for cx, cz in smaller_corners]
+                    smaller_corner_zs = [lrd_center_z + cz for cx, cz in smaller_corners]
+
+                    # Ensure the rectangle closes by repeating the first corner
+                    smaller_corner_xs.append(smaller_corner_xs[0])
+                    smaller_corner_zs.append(smaller_corner_zs[0])
+                    
+                    # Now add a little line (of length lrd.do_d) going from the lower hinge upwards at an angle of lrd.do_theta
+                    mooring_angle = np.arctan(vt_sol / ht_sol)
+                    lower_hinge_x, lower_hinge_z = xs_values_lrd[-1], zs_values_lrd[-1]
+                    line_end_x = lower_hinge_x + lrd.do_d * np.cos(mooring_angle)
+                    line_end_z = lower_hinge_z + lrd.do_d * np.sin(mooring_angle)
+                    line_from_hinge_x = [lower_hinge_x, line_end_x]
+                    line_from_hinge_y = [lower_hinge_z, line_end_z]
+                    
+                    all_corner_xs.append(corner_xs)
+                    all_corner_zs.append(corner_zs)
+                    all_smaller_corner_xs.append(smaller_corner_xs)
+                    all_smaller_corner_zs.append(smaller_corner_zs)
+                    all_line_from_hinge_x.append(line_from_hinge_x)
+                    all_line_from_hinge_y.append(line_from_hinge_y)
                 else:
                     ext_or_str = (lrd_extension - lrd.l) / lrd.l
                     extension = lrd_extension - lrd.l
@@ -193,5 +264,5 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     tension_values = [element / 1000 for element in tension_values]
         
                     
-    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated
+    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated, all_corner_xs, all_corner_zs, all_smaller_corner_xs, all_smaller_corner_zs, all_line_from_hinge_x, all_line_from_hinge_y
     
