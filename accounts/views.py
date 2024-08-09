@@ -22,6 +22,26 @@ from wlgr_calc.model_functions import pwp_acc, update_properties, update_applied
 from sympy import N
 import math
 
+from .tasks import long_running_task
+from celery.result import AsyncResult
+
+class StartTaskView(APIView):
+    def post(self, request):
+        task = long_running_task.delay()
+        return Response({'task_id': task.id}, status=status.HTTP_202_ACCEPTED)
+
+class TaskStatusView(APIView):
+    def get(self, request, task_id):
+        result = AsyncResult(task_id)
+        if result.state == 'PENDING':
+            response = {'status': 'pending'}
+        elif result.state == 'SUCCESS':
+            response = {'status': 'completed', 'result': result.result}
+        else:
+            response = {'status': 'in-progress'}
+        return Response(response, status=status.HTTP_200_OK)
+
+
 # User accounts
 
 # curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "password": "testpassword", "email": "test@example.com"}' http://localhost:8000/api/register/
@@ -601,36 +621,38 @@ def run_qs_offset(request):
     else:
         init = two_sec_init(seabed_contact=seabed_contact, lrd=lrd, at=preten, xf=xf, zf=zf, ea1=ea1, w1=w1, ea2=ea2, w2=w2, l2=l2)
     
-    # variables for LRD stiffness curve
+    all_plots = request.data.get('all_plots')  
+    max_offset = request.data.get('max_offset')
+    resolution = request.data.get('resolution')
+    
+        # variables for LRD stiffness curve
     all_plots = request.data.get('all_plots')
-    at_values_qs_offset = []
-    ext_or_str_values_qs_offset = []
+    at_values_qs_offset_tfi = []
+    ext_or_str_values_qs_offset_tfi = []
     
     if all_plots:
         # Generate 100 evenly spaced axial tension values between T_min and T_max
         if lrd_type == "2":   
             tfi_rt = tfi_rt_kN * 1e3
-            at_values_qs_offset = np.linspace(0.0, tfi_rt * 1.5, 100)
+            at_values_qs_offset_tfi = np.linspace(0.0, tfi_rt * 1.5, 100)
             # Get modelled data from stiffness equation
-            ext_or_str_values_qs_offset = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset]
-        elif lrd_type == "3":
-            at_values_qs_offset = np.linspace(0.1, lrd.do_fg * 4, 100)
-            ext_or_str_values_qs_offset = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset]
+            ext_or_str_values_qs_offset_tfi = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset_tfi]
         
         # Convert numpy floats to Python floats
-        at_values_qs_offset = [float(value)/1000 for value in at_values_qs_offset]
-        ext_or_str_values_qs_offset = [float(value) for value in ext_or_str_values_qs_offset]
+        at_values_qs_offset_tfi = [float(value)/1000 for value in at_values_qs_offset_tfi]
+        ext_or_str_values_qs_offset_tfi = [float(value) for value in ext_or_str_values_qs_offset_tfi]
+        
     
-    max_offset = request.data.get('max_offset')
-    resolution = request.data.get('resolution')
+
     
-    tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated, all_corner_xs, all_corner_zs, all_smaller_corner_xs, all_smaller_corner_zs, all_line_from_hinge_x, all_line_from_hinge_y = qs_offset(
+    tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated, all_corner_xs, all_corner_zs, all_smaller_corner_xs, all_smaller_corner_zs, all_line_from_hinge_x, all_line_from_hinge_y, all_at_values_qs_offset, all_ext_or_str_values_qs_offset = qs_offset(
         init, max_offset, resolution, all_plots)
+    
 
     
     return Response({ 
-                     'at_values_qs_offset': at_values_qs_offset,
-                     'ext_or_str_values_qs_offset': ext_or_str_values_qs_offset,
+                     'at_values_qs_offset_tfi': at_values_qs_offset_tfi,
+                     'ext_or_str_values_qs_offset_tfi': ext_or_str_values_qs_offset_tfi,
                      'tension_values': tension_values,
                      'displacement_values': displacement_values,
                      'all_current_ext_or_str_values': all_current_ext_or_str_values,
@@ -657,6 +679,10 @@ def run_qs_offset(request):
                      'all_smaller_corner_zs': all_smaller_corner_zs, 
                      'all_line_from_hinge_x': all_line_from_hinge_x, 
                      'all_line_from_hinge_y': all_line_from_hinge_y,
+                     
+                     'all_ext_or_str_values_qs_offset': all_ext_or_str_values_qs_offset,
+                     'all_at_values_qs_offset': all_at_values_qs_offset,
+                     
     
                      })
 

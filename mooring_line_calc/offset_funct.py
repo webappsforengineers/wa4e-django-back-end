@@ -17,6 +17,7 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     profile_plot: boolean to determine if the animations should be plotted (much quicker if set to False)
 
     '''
+
     
     # Set symbolic variables
     xf_sym, zf_sym, vt_sym, ht_sym, at_sym, s_sym, l_sym, ea_sym, w_sym = sp.symbols('xf zf vt ht at s l ea w')
@@ -36,6 +37,9 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     all_smaller_corner_zs = []
     all_line_from_hinge_x = []
     all_line_from_hinge_y = []
+    
+    all_at_values_qs_offset = []
+    all_ext_or_str_values_qs_offset = []
     
     
     all_tfi_current_lengths = []
@@ -145,8 +149,17 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
                 lrd_extension = np.sqrt(lrd_x_val**2 + lrd_z_val**2)
 
                 if lrd.lrd_type == 'do':
-                    ext_or_str = get_lrd_strain(lrd, 'num', at = tension) 
-                    print(f'ext_or_str {ext_or_str}')
+                    # stiffness curve line
+                    at_values_qs_offset = np.linspace(0.01, lrd.do_fg * 5, 100)
+                    ext_or_str_values_qs_offset = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset]
+                    
+                    at_values_qs_offset = [float(value)/1000 for value in at_values_qs_offset]
+                    
+                    all_at_values_qs_offset.append(at_values_qs_offset)
+                    all_ext_or_str_values_qs_offset.append(ext_or_str_values_qs_offset)
+                    
+                    # point on stiffness curve line
+                    ext_or_str =  get_lrd_strain(lrd, form='num', at = tension)
                     all_current_ext_or_str_values.append(ext_or_str)
                     lrd_alpha_val = np.degrees(float(lrd_alpha_val_rad))
                     
@@ -254,6 +267,15 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
                     all_line_from_hinge_x.append(line_from_hinge_x)
                     all_line_from_hinge_y.append(line_from_hinge_y)
                 else:
+                    # print(lrd.tfi_rt)
+                    # at_values_qs_offset = np.linspace(0.0, lrd.tfi_rt * 1.5, 100)
+                    # ext_or_str_values_qs_offset = [get_lrd_strain(lrd, form = 'num', at = t) for t in at_values_qs_offset]
+                    
+                    # at_values_qs_offset = [float(value)/1000 for value in at_values_qs_offset]
+                    
+                    # all_at_values_qs_offset.append(at_values_qs_offset)
+                    # all_ext_or_str_values_qs_offset.append(ext_or_str_values_qs_offset)
+                    
                     ext_or_str = (lrd_extension - lrd.l) / lrd.l
                     extension = lrd_extension - lrd.l
                     current_length = lrd.l + extension
@@ -262,7 +284,7 @@ def qs_offset(init_package, max_offset = 15, resolution = 2, profile_plot = True
     
     # convert tension values to kN 
     tension_values = [element / 1000 for element in tension_values]
+    
         
-                    
-    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated, all_corner_xs, all_corner_zs, all_smaller_corner_xs, all_smaller_corner_zs, all_line_from_hinge_x, all_line_from_hinge_y
+    return tension_values, displacement_values, all_current_ext_or_str_values, all_xs_values_sec1, all_zs_values_sec1, all_xs_values_sec2, all_zs_values_sec2, all_xs_values_lrd, all_zs_values_lrd, all_tfi_current_lengths, all_ml_angles, all_full_rectangles_rotated, all_bottom_rectangles_rotated, all_top_hinges_rotated, all_bottom_hinges_rotated, all_corner_xs, all_corner_zs, all_smaller_corner_xs, all_smaller_corner_zs, all_line_from_hinge_x, all_line_from_hinge_y, all_at_values_qs_offset, all_ext_or_str_values_qs_offset,
     

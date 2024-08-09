@@ -1,5 +1,5 @@
 from django.urls import include, path, re_path
-from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, train_model, initialise_mooring, run_qs_offset, calculate_wlgr
+from .views import register_user, user_login, user_logout, UserList, current_user, SelectUser, DeleteUser, FileUploadView, train_model, initialise_mooring, run_qs_offset, calculate_wlgr, StartTaskView, TaskStatusView
 
 
 
@@ -18,4 +18,6 @@ urlpatterns = [
     path('initialise-mooring/', initialise_mooring, name='initialise-mooring'),
     path('run-qs-offset/', run_qs_offset, name='run-qs-offset'),
     path('calculate-wlgr/', calculate_wlgr, name='calculate-wlgr'),
+    path('start-task/', StartTaskView.as_view(), name='start-task'),
+    path('task-status/<str:task_id>/', TaskStatusView.as_view(), name='task-status'),
 ]
